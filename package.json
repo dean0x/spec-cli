@@ -26,6 +26,7 @@
     "build": "tsc",
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist",
+    "test": "vitest run",
     "lint": "echo 'No linter configured yet'",
     "validate": "node dist/cli/index.js validate"
   },
@@ -52,7 +53,8 @@
   "homepage": "https://github.com/dean0x/spec-cli#readme",
   "devDependencies": {
     "@types/node": "^25.2.1",
-    "typescript": "^5.3.0"
+    "typescript": "^5.3.0",
+    "vitest": "^4.0.18"
   },
   "files": [
     "dist",

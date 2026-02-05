@@ -4,6 +4,7 @@
  * Validates that all markdown links resolve to existing files.
  */
 
+import { posix } from 'node:path';
 import type { ValidationIssue } from '../../core/types.js';
 
 /**
@@ -56,27 +57,13 @@ export function extractMarkdownLinks(
  * Resolve a relative link from a source file path
  */
 export function resolveLinkPath(sourceFile: string, link: string): string {
-  // Handle absolute paths (starting with /)
-  if (link.startsWith('/')) {
-    return link.slice(1); // Remove leading slash
-  }
+  const sourceDir = posix.dirname(sourceFile);
+  const resolved = link.startsWith('/')
+    ? link.slice(1) // absolute: relative to docs root
+    : posix.join(sourceDir, link); // relative: resolve from source dir
 
-  // Get directory of source file
-  const sourceDir = sourceFile.substring(0, sourceFile.lastIndexOf('/'));
-
-  // Handle relative paths
-  const parts = link.split('/');
-  const dirParts = sourceDir.split('/');
-
-  for (const part of parts) {
-    if (part === '..') {
-      dirParts.pop();
-    } else if (part !== '.') {
-      dirParts.push(part);
-    }
-  }
-
-  return dirParts.join('/');
+  // Normalize (.., ., double slashes) and strip trailing slash
+  return posix.normalize(resolved).replace(/\/$/, '');
 }
 
 /**
