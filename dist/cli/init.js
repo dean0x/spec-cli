@@ -9,7 +9,7 @@
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 const DEFAULT_CONFIG = `# spec-cli Configuration
-# See https://github.com/your-org/spec-cli for documentation
+# See https://github.com/dean0x/spec-cli for documentation
 
 # Directory containing specification markdown files
 docsDir: docs
@@ -108,7 +108,7 @@ export async function initProject(args) {
         console.log('  Created: .manifests/features/');
         // Create a sample manifest
         const sampleManifest = `# Example feature manifest
-# See https://github.com/your-org/spec-cli for documentation
+# See https://github.com/dean0x/spec-cli for documentation
 
 feature: example
 status: active
