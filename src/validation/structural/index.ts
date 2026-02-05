@@ -9,7 +9,7 @@
  */
 
 import type { ValidationResult, ValidationIssue } from '../../core/types.js';
-import { getComponentTypeFromPath, COMPONENT_TYPES } from '../../core/types.js';
+import { getComponentTypeKeyFromPath } from '../../core/types.js';
 import { checkAllLinks } from './link-checker.js';
 import { checkAllLayerRules } from './layer-rules.js';
 import { validateFrontmatter } from './frontmatter.js';
@@ -58,17 +58,10 @@ export function validateStructure(
     for (const [filePath, content] of files) {
       if (!filePath.endsWith('.md')) continue;
 
-      const componentType = getComponentTypeFromPath(filePath);
-      if (componentType) {
-        // Get the type key from the component type
-        const typeKey = Object.entries(COMPONENT_TYPES).find(
-          ([, v]) => v === componentType
-        )?.[0];
-
-        if (typeKey) {
-          const frontmatterIssues = validateFrontmatter(filePath, content, typeKey);
-          allIssues.push(...frontmatterIssues);
-        }
+      const result = getComponentTypeKeyFromPath(filePath);
+      if (result) {
+        const frontmatterIssues = validateFrontmatter(filePath, content, result.key);
+        allIssues.push(...frontmatterIssues);
       }
     }
   }

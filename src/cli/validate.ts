@@ -5,9 +5,9 @@
  * Uses resolveSpecCliPaths() to find docs regardless of where spec-cli is installed.
  */
 
-import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
-import { join, relative } from 'node:path';
+import { existsSync } from 'node:fs';
 import { resolveSpecCliPaths } from '../core/paths.js';
+import { collectMarkdownFiles } from '../core/files.js';
 import {
   validateStructure,
   formatValidationResult,
@@ -49,39 +49,6 @@ function parseArgs(args: string[]): ValidateOptions {
   };
 }
 
-/**
- * Recursively collect all markdown files in a directory
- */
-function collectFiles(dir: string, base: string): Map<string, string> {
-  const files = new Map<string, string>();
-
-  function walk(currentDir: string): void {
-    if (!existsSync(currentDir)) {
-      return;
-    }
-
-    const entries = readdirSync(currentDir);
-
-    for (const entry of entries) {
-      const fullPath = join(currentDir, entry);
-      const relativePath = relative(base, fullPath);
-      const stat = statSync(fullPath);
-
-      if (stat.isDirectory()) {
-        // Skip node_modules and hidden directories
-        if (!entry.startsWith('.') && entry !== 'node_modules') {
-          walk(fullPath);
-        }
-      } else if (stat.isFile() && entry.endsWith('.md')) {
-        const content = readFileSync(fullPath, 'utf-8');
-        files.set(relativePath, content);
-      }
-    }
-  }
-
-  walk(dir);
-  return files;
-}
 
 export async function runValidation(args: string[]): Promise<void> {
   const options = parseArgs(args);
@@ -113,7 +80,7 @@ export async function runValidation(args: string[]): Promise<void> {
   }
 
   // Collect all markdown files
-  const files = collectFiles(docsRoot, projectRoot);
+  const files = collectMarkdownFiles(docsRoot, projectRoot);
 
   if (!options.json) {
     console.log(`Found ${files.size} markdown files`);

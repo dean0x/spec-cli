@@ -201,28 +201,52 @@ export interface ValidationResult {
  * Determine component type from file path
  */
 export function getComponentTypeFromPath(filePath: string): ComponentType | null {
-  // Normalize path
+  const result = getComponentTypeKeyFromPath(filePath);
+  return result ? result.type : null;
+}
+
+/**
+ * Determine component type key and type from file path.
+ * Returns both the string key (for indexing REQUIRED_FRONTMATTER)
+ * and the ComponentType object.
+ */
+export function getComponentTypeKeyFromPath(
+  filePath: string
+): { key: string; type: ComponentType } | null {
   const normalizedPath = filePath.replace(/\\/g, '/');
 
-  // Check each component type's directory pattern
-  for (const [, type] of Object.entries(COMPONENT_TYPES)) {
-    const pattern = type.directory;
+  const entries = Object.entries(COMPONENT_TYPES);
 
-    // Handle wildcard patterns like 'docs/domains/*' or 'docs/products/*/features'
-    if (pattern.includes('*')) {
-      const regexPattern = pattern
-        .replace(/\*/g, '[^/]+')
-        .replace(/\//g, '\\/');
-      const regex = new RegExp(`^${regexPattern}`);
-      if (regex.test(normalizedPath)) {
-        return type;
-      }
-    } else if (normalizedPath.startsWith(pattern)) {
-      return type;
+  // Check wildcard patterns first — they are more specific
+  // (e.g. 'docs/products/*/features' before 'docs/products')
+  for (const [key, type] of entries) {
+    const pattern = type.directory;
+    if (!pattern.includes('*')) continue;
+
+    const regexPattern = pattern
+      .replace(/\*/g, '[^/]+')
+      .replace(/\//g, '\\/');
+    const regex = new RegExp(`^${regexPattern}`);
+    if (regex.test(normalizedPath)) {
+      return { key, type };
     }
   }
 
-  return null;
+  // Then check prefix patterns, longest first
+  let best: { key: string; type: ComponentType } | null = null;
+  let bestLen = 0;
+
+  for (const [key, type] of entries) {
+    const pattern = type.directory;
+    if (pattern.includes('*')) continue;
+
+    if (normalizedPath.startsWith(pattern) && pattern.length > bestLen) {
+      best = { key, type };
+      bestLen = pattern.length;
+    }
+  }
+
+  return best;
 }
 
 /**

@@ -7,6 +7,7 @@
 
 import { initProject } from './init.js';
 import { runValidation } from './validate.js';
+import { runAddFrontmatter } from './add-frontmatter.js';
 
 const HELP_TEXT = `
 spec-cli - Composable Specification Framework
@@ -15,9 +16,10 @@ Usage:
   spec-cli <command> [options]
 
 Commands:
-  init        Initialize spec-cli in current project
-  validate    Run structural validation on docs
-  help        Show this help message
+  init              Initialize spec-cli in current project
+  validate          Run structural validation on docs
+  add-frontmatter   Add missing YAML frontmatter to docs
+  help              Show this help message
 
 Options:
   --help, -h  Show help for a command
@@ -51,6 +53,10 @@ async function main(): Promise<void> {
 
     case 'validate':
       await runValidation(args.slice(1));
+      break;
+
+    case 'add-frontmatter':
+      await runAddFrontmatter(args.slice(1));
       break;
 
     default:
