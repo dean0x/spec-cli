@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "spec-cli/frontmatter/operations",
+  "title": "Operations Component Frontmatter",
+  "description": "Frontmatter schema for operations documentation",
+  "type": "object",
+  "required": ["title"],
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Name of the operations topic"
+    },
+    "description": {
+      "type": "string",
+      "description": "Brief description of the operational concern"
+    },
+    "runbook": {
+      "type": "boolean",
+      "description": "Whether this is a runbook (step-by-step procedure)"
+    },
+    "oncall": {
+      "type": "string",
+      "description": "Team responsible for on-call response"
+    }
+  },
+  "additionalProperties": true
+}

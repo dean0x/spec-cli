@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "spec-cli/frontmatter/feature",
+  "title": "Feature Component Frontmatter",
+  "description": "Frontmatter schema for product features",
+  "type": "object",
+  "required": ["title", "status"],
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Name of the feature"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["planned", "in-progress", "active", "deprecated"],
+      "description": "Current implementation status"
+    },
+    "priority": {
+      "type": "string",
+      "enum": ["P0", "P1", "P2", "P3"],
+      "description": "Feature priority"
+    },
+    "dependencies": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Other features this depends on"
+    },
+    "product": {
+      "type": "string",
+      "description": "Parent product this feature belongs to"
+    },
+    "epic": {
+      "type": "string",
+      "description": "Epic or initiative this feature is part of"
+    }
+  },
+  "additionalProperties": true
+}

@@ -1,0 +1,68 @@
+{
+  "name": "@spec-cli/core",
+  "version": "0.1.0",
+  "description": "Composable specification framework for managing layered technical documentation",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "spec-cli": "./dist/cli/index.js"
+  },
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./core": {
+      "import": "./dist/core/index.js",
+      "types": "./dist/core/index.d.ts"
+    },
+    "./validation": {
+      "import": "./dist/validation/structural/index.js",
+      "types": "./dist/validation/structural/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist",
+    "lint": "echo 'No linter configured yet'",
+    "validate": "node dist/cli/index.js validate"
+  },
+  "keywords": [
+    "specification",
+    "documentation",
+    "validation",
+    "claude-code-plugin",
+    "technical-writing",
+    "claude",
+    "claude-code",
+    "cli",
+    "typescript"
+  ],
+  "author": "dean0x",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dean0x/spec-cli.git"
+  },
+  "bugs": {
+    "url": "https://github.com/dean0x/spec-cli/issues"
+  },
+  "homepage": "https://github.com/dean0x/spec-cli#readme",
+  "devDependencies": {
+    "@types/node": "^25.2.1",
+    "typescript": "^5.3.0"
+  },
+  "files": [
+    "dist",
+    "assets",
+    ".claude-plugin"
+  ],
+  "claude-plugin": {
+    "manifest": ".claude-plugin/plugin.json"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

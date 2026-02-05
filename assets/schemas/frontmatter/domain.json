@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "spec-cli/frontmatter/domain",
+  "title": "Domain Component Frontmatter",
+  "description": "Frontmatter schema for domain documentation",
+  "type": "object",
+  "required": ["title"],
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Name of the domain"
+    },
+    "description": {
+      "type": "string",
+      "description": "Brief description of the domain's responsibility"
+    },
+    "owner": {
+      "type": "string",
+      "description": "Team or person responsible for this domain"
+    },
+    "dependencies": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Other domains this depends on"
+    }
+  },
+  "additionalProperties": true
+}

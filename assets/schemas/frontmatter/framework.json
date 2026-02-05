@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "spec-cli/frontmatter/framework",
+  "title": "Framework Component Frontmatter",
+  "description": "Frontmatter schema for documentation framework files",
+  "type": "object",
+  "required": ["title"],
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Title of the framework document"
+    },
+    "description": {
+      "type": "string",
+      "description": "Brief description"
+    },
+    "version": {
+      "type": "string",
+      "description": "Framework version"
+    }
+  },
+  "additionalProperties": true
+}

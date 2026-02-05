@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "spec-cli/frontmatter/decision",
+  "title": "Decision (ADR) Component Frontmatter",
+  "description": "Frontmatter schema for Architecture Decision Records",
+  "type": "object",
+  "required": ["title", "status", "date"],
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Title of the decision"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["proposed", "accepted", "deprecated", "superseded", "rejected"],
+      "description": "Current status of the decision"
+    },
+    "date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date the decision was made (YYYY-MM-DD)"
+    },
+    "deciders": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "People who made this decision"
+    },
+    "supersedes": {
+      "type": "string",
+      "description": "Previous ADR this supersedes"
+    },
+    "supersededBy": {
+      "type": "string",
+      "description": "ADR that supersedes this one"
+    },
+    "tags": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Tags for categorization"
+    }
+  },
+  "additionalProperties": true
+}

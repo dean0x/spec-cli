@@ -1,0 +1,31 @@
+# Source files
+src/
+*.ts
+!*.d.ts
+
+# Tests
+**/*.test.js
+**/*.spec.js
+tests/
+
+# Build artifacts
+*.map
+.tsbuildinfo
+
+# Config
+tsconfig.json
+.editorconfig
+.vscode/
+.idea/
+
+# GitHub
+.github/
+
+# Documentation (keep README)
+*.md
+!README.md
+
+# Development
+coverage/
+logs/
+CLAUDE.md

@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "spec-cli/frontmatter/product",
+  "title": "Product Component Frontmatter",
+  "description": "Frontmatter schema for product documentation",
+  "type": "object",
+  "required": ["title"],
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Name of the product"
+    },
+    "description": {
+      "type": "string",
+      "description": "Brief description of the product"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["planning", "development", "active", "deprecated"],
+      "description": "Current product lifecycle status"
+    },
+    "audience": {
+      "type": "string",
+      "description": "Target audience for this product"
+    }
+  },
+  "additionalProperties": true
+}

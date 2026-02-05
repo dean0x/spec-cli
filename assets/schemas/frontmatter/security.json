@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "spec-cli/frontmatter/security",
+  "title": "Security Component Frontmatter",
+  "description": "Frontmatter schema for security documentation",
+  "type": "object",
+  "required": ["title"],
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Name of the security topic"
+    },
+    "description": {
+      "type": "string",
+      "description": "Brief description of the security concern"
+    },
+    "classification": {
+      "type": "string",
+      "enum": ["public", "internal", "confidential", "restricted"],
+      "description": "Information classification level"
+    },
+    "compliance": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Compliance frameworks this addresses",
+      "examples": ["SOC2", "GDPR", "HIPAA", "PCI-DSS"]
+    }
+  },
+  "additionalProperties": true
+}

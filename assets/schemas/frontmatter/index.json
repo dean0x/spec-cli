@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "spec-cli/frontmatter/index",
+  "title": "Frontmatter Schema Index",
+  "description": "Index of all component type frontmatter schemas",
+  "type": "object",
+  "properties": {
+    "componentTypes": {
+      "type": "object",
+      "description": "Map of component type to schema file",
+      "properties": {
+        "schema": { "$ref": "./schema.json" },
+        "pattern": { "$ref": "./pattern.json" },
+        "decision": { "$ref": "./decision.json" },
+        "domain": { "$ref": "./domain.json" },
+        "domain-topic": { "$ref": "./domain-topic.json" },
+        "infrastructure": { "$ref": "./infrastructure.json" },
+        "security": { "$ref": "./security.json" },
+        "operations": { "$ref": "./operations.json" },
+        "frontend": { "$ref": "./frontend.json" },
+        "api": { "$ref": "./api.json" },
+        "diagram": { "$ref": "./diagram.json" },
+        "product": { "$ref": "./product.json" },
+        "feature": { "$ref": "./feature.json" },
+        "overview": { "$ref": "./overview.json" },
+        "planning-doc": { "$ref": "./planning-doc.json" },
+        "framework": { "$ref": "./framework.json" }
+      }
+    }
+  }
+}

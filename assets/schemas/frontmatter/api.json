@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "spec-cli/frontmatter/api",
+  "title": "API Component Frontmatter",
+  "description": "Frontmatter schema for API documentation",
+  "type": "object",
+  "required": ["title", "version"],
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Name of the API"
+    },
+    "version": {
+      "type": "string",
+      "description": "API version"
+    },
+    "description": {
+      "type": "string",
+      "description": "Brief description of the API"
+    },
+    "baseUrl": {
+      "type": "string",
+      "description": "Base URL for the API"
+    },
+    "authentication": {
+      "type": "string",
+      "description": "Authentication method",
+      "examples": ["Bearer", "API Key", "OAuth2", "None"]
+    }
+  },
+  "additionalProperties": true
+}

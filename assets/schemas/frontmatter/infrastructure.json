@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "spec-cli/frontmatter/infrastructure",
+  "title": "Infrastructure Component Frontmatter",
+  "description": "Frontmatter schema for infrastructure documentation",
+  "type": "object",
+  "required": ["title"],
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Name of the infrastructure component"
+    },
+    "description": {
+      "type": "string",
+      "description": "Brief description of the infrastructure"
+    },
+    "provider": {
+      "type": "string",
+      "description": "Cloud/infrastructure provider",
+      "examples": ["GCP", "AWS", "Azure", "self-hosted"]
+    },
+    "environment": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Environments where this applies"
+    }
+  },
+  "additionalProperties": true
+}

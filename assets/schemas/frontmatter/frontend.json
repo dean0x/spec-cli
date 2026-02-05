@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "spec-cli/frontmatter/frontend",
+  "title": "Frontend Component Frontmatter",
+  "description": "Frontmatter schema for frontend documentation",
+  "type": "object",
+  "required": ["title"],
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Name of the frontend component or topic"
+    },
+    "description": {
+      "type": "string",
+      "description": "Brief description"
+    },
+    "framework": {
+      "type": "string",
+      "description": "UI framework",
+      "examples": ["React", "Vue", "Svelte", "Angular"]
+    },
+    "components": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "UI components covered"
+    }
+  },
+  "additionalProperties": true
+}

@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "spec-cli/frontmatter/planning-doc",
+  "title": "Planning Document Component Frontmatter",
+  "description": "Frontmatter schema for planning documents",
+  "type": "object",
+  "required": ["title"],
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Title of the planning document"
+    },
+    "description": {
+      "type": "string",
+      "description": "Brief description"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["draft", "review", "approved", "archived"],
+      "description": "Document status"
+    },
+    "author": {
+      "type": "string",
+      "description": "Author of the document"
+    },
+    "date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date created or last updated"
+    }
+  },
+  "additionalProperties": true
+}

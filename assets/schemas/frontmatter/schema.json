@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "spec-cli/frontmatter/schema",
+  "title": "Schema Component Frontmatter",
+  "description": "Frontmatter schema for database/API schema documentation",
+  "type": "object",
+  "required": ["title", "domain"],
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Human-readable name of the schema"
+    },
+    "domain": {
+      "type": "string",
+      "description": "Business domain this schema belongs to",
+      "examples": ["billing", "auth", "properties", "rules", "events"]
+    },
+    "description": {
+      "type": "string",
+      "description": "Brief description of the schema's purpose"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+(\\.\\d+)?$",
+      "description": "Schema version (semver)"
+    },
+    "tables": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "List of database tables defined in this schema"
+    },
+    "related": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Related schemas"
+    }
+  },
+  "additionalProperties": true
+}

@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "spec-cli/frontmatter/pattern",
+  "title": "Pattern Component Frontmatter",
+  "description": "Frontmatter schema for architectural patterns",
+  "type": "object",
+  "required": ["title", "status"],
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Name of the pattern"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["draft", "active", "deprecated", "superseded"],
+      "description": "Current status of the pattern"
+    },
+    "description": {
+      "type": "string",
+      "description": "Brief description of what problem this pattern solves"
+    },
+    "related": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Related patterns"
+    },
+    "supersededBy": {
+      "type": "string",
+      "description": "Pattern that supersedes this one (if deprecated)"
+    }
+  },
+  "additionalProperties": true
+}

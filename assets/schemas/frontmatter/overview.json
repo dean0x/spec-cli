@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "spec-cli/frontmatter/overview",
+  "title": "Overview Component Frontmatter",
+  "description": "Frontmatter schema for overview documentation",
+  "type": "object",
+  "required": ["title"],
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Title of the overview"
+    },
+    "description": {
+      "type": "string",
+      "description": "Brief description"
+    },
+    "audience": {
+      "type": "string",
+      "description": "Target audience for this overview"
+    }
+  },
+  "additionalProperties": true
+}

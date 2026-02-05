@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "spec-cli/frontmatter/domain-topic",
+  "title": "Domain Topic Component Frontmatter",
+  "description": "Frontmatter schema for topics within a domain",
+  "type": "object",
+  "required": ["title"],
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Name of the topic"
+    },
+    "description": {
+      "type": "string",
+      "description": "Brief description of this topic"
+    },
+    "domain": {
+      "type": "string",
+      "description": "Parent domain this topic belongs to"
+    }
+  },
+  "additionalProperties": true
+}

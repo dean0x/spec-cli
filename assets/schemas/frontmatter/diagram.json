@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "spec-cli/frontmatter/diagram",
+  "title": "Diagram Component Frontmatter",
+  "description": "Frontmatter schema for architectural diagrams",
+  "type": "object",
+  "required": ["title"],
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Name of the diagram"
+    },
+    "description": {
+      "type": "string",
+      "description": "What this diagram illustrates"
+    },
+    "type": {
+      "type": "string",
+      "enum": ["sequence", "flow", "architecture", "erd", "state", "component"],
+      "description": "Type of diagram"
+    },
+    "format": {
+      "type": "string",
+      "enum": ["mermaid", "plantuml", "d2", "excalidraw", "png", "svg"],
+      "description": "Diagram format"
+    }
+  },
+  "additionalProperties": true
+}
