@@ -1,5 +1,5 @@
 /**
- * spec-cli validate command
+ * spec validate command
  *
  * Runs structural validation on the consumer's docs directory.
  * Uses resolveSpecCliPaths() to find docs regardless of where spec-cli is installed.
@@ -15,10 +15,10 @@ import {
 } from '../validation/structural/index.js';
 
 const VALIDATE_HELP = `
-spec-cli validate - Run structural validation on documentation
+spec validate - Run structural validation on documentation
 
 Usage:
-  spec-cli validate [options]
+  spec validate [options]
 
 Options:
   --json        Output results as JSON
@@ -26,9 +26,9 @@ Options:
   --help, -h    Show this help message
 
 Examples:
-  spec-cli validate
-  spec-cli validate --json
-  spec-cli validate --strict
+  spec validate
+  spec validate --json
+  spec validate --strict
 
 Exit codes:
   0 - Validation passed

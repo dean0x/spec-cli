@@ -1,7 +1,7 @@
 /**
- * spec-cli init command
+ * spec init command
  *
- * Initializes a project to use spec-cli by creating:
+ * Initializes a project to use spec by creating:
  * - spec.config.yaml with defaults
  * - .manifests/features/ directory
  * - Optionally scaffolds docs/ structure
@@ -12,7 +12,7 @@ import { join } from 'node:path';
 import { installPlugin } from '../core/plugin.js';
 import type { PluginScope } from '../core/plugin.js';
 
-const DEFAULT_CONFIG = `# spec-cli Configuration
+const DEFAULT_CONFIG = `# spec Configuration
 # See https://github.com/dean0x/spec-cli for documentation
 
 # Directory containing specification markdown files
@@ -23,10 +23,10 @@ manifestDir: .manifests/features
 `;
 
 const INIT_HELP = `
-spec-cli init - Initialize spec-cli in current project
+spec init - Initialize spec in current project
 
 Usage:
-  spec-cli init [options]
+  spec init [options]
 
 Options:
   --force                         Overwrite existing configuration
@@ -35,11 +35,11 @@ Options:
   --help, -h                      Show this help message
 
 Examples:
-  spec-cli init
-  spec-cli init --scaffold
-  spec-cli init --force
-  spec-cli init --plugin=project
-  spec-cli init --plugin=none
+  spec init
+  spec init --scaffold
+  spec init --force
+  spec init --plugin=project
+  spec init --plugin=none
 `;
 
 interface InitOptions {
@@ -131,7 +131,7 @@ export async function initProject(args: string[]): Promise<void> {
   const configPath = join(projectRoot, 'spec.config.yaml');
   const manifestDir = join(projectRoot, '.manifests', 'features');
 
-  console.log('Initializing spec-cli...\n');
+  console.log('Initializing spec...\n');
 
   // Create spec.config.yaml
   if (existsSync(configPath) && !options.force) {
@@ -191,11 +191,11 @@ uses:
     createDocsStructure(projectRoot);
   }
 
-  console.log('\nspec-cli initialized successfully!');
+  console.log('\nspec initialized successfully!');
   console.log('\nNext steps:');
   console.log('  1. Create specification documents in docs/');
   console.log('  2. Define feature manifests in .manifests/features/');
-  console.log('  3. Run "spec-cli validate" to check structure');
+  console.log('  3. Run "spec validate" to check structure');
   if (options.plugin !== 'none') {
     console.log('  4. Use /spec commands in Claude Code');
   }

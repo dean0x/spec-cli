@@ -21,10 +21,10 @@ npm install -g @spec-cli/core
 
 ```bash
 # Initialize in your project
-spec-cli init
+spec init
 
 # Validate documentation structure
-spec-cli validate
+spec validate
 
 # Create a new component
 # (via Claude Code: /spec add schema billing)
@@ -34,9 +34,9 @@ spec-cli validate
 
 | Command | Description |
 |---------|-------------|
-| `spec-cli init` | Initialize spec-cli in current project |
-| `spec-cli validate` | Run structural validation on docs |
-| `spec-cli validate --json` | Output results as JSON |
+| `spec init` | Initialize spec in current project |
+| `spec validate` | Run structural validation on docs |
+| `spec validate --json` | Output results as JSON |
 
 ## Component Types
 
