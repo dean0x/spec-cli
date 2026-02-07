@@ -20,13 +20,18 @@ export interface ComponentType {
 }
 
 /**
- * Layer hierarchy (dependencies flow DOWN only):
+ * Layer hierarchy (default dependencies flow DOWN only):
  *
  * planning    -> can reference everything
  * product     -> reference, domain, supporting
  * supporting  -> reference, domain
  * domain      -> reference
  * reference   -> nothing (foundation)
+ *
+ * Per-type `canReference` overrides this default hierarchy.
+ * Some reference-layer types (decisions, patterns, schemas) need to
+ * discuss domain/supporting concepts, so their canReference is broader
+ * than the strict hierarchy would allow.
  */
 export const LAYER_HIERARCHY: Record<ComponentLayer, number> = {
   reference: 0,
@@ -45,19 +50,19 @@ export const COMPONENT_TYPES: Record<string, ComponentType> = {
     layer: 'reference',
     name: 'Schema',
     directory: 'docs/schemas',
-    canReference: [],
+    canReference: ['domain', 'supporting'],
   },
   pattern: {
     layer: 'reference',
     name: 'Pattern',
     directory: 'docs/architecture/patterns',
-    canReference: [],
+    canReference: ['domain', 'supporting'],
   },
   decision: {
     layer: 'reference',
     name: 'Decision',
     directory: 'docs/architecture/decisions',
-    canReference: [],
+    canReference: ['domain', 'supporting', 'planning'],
   },
 
   // Domain Layer (can reference: reference)
@@ -71,7 +76,7 @@ export const COMPONENT_TYPES: Record<string, ComponentType> = {
     layer: 'domain',
     name: 'Domain Topic',
     directory: 'docs/domains/*',
-    canReference: ['reference'],
+    canReference: ['reference', 'supporting'],
   },
 
   // Supporting Layer (can reference: reference, domain)
@@ -117,7 +122,7 @@ export const COMPONENT_TYPES: Record<string, ComponentType> = {
     layer: 'product',
     name: 'Product',
     directory: 'docs/products',
-    canReference: ['reference', 'domain', 'supporting'],
+    canReference: ['reference', 'domain', 'supporting', 'planning'],
   },
   feature: {
     layer: 'product',

@@ -15,7 +15,6 @@ import type {
 } from '../../core/types.js';
 import {
   getComponentTypeFromPath,
-  isValidLayerReference,
 } from '../../core/types.js';
 import { extractMarkdownLinks, resolveLinkPath } from './link-checker.js';
 
@@ -58,15 +57,18 @@ export function checkFileLayerRules(
       continue;
     }
 
-    // Check if this reference violates layer rules
-    if (!isValidLayerReference(sourceType.layer, targetLayer)) {
+    // Same layer is always valid
+    if (sourceType.layer === targetLayer) continue;
+
+    // Cross-layer: check the type's declared canReference list
+    if (!sourceType.canReference.includes(targetLayer)) {
       issues.push({
         severity: 'error',
         code: 'LAYER_VIOLATION',
-        message: `Layer violation: ${sourceType.layer} layer cannot reference ${targetLayer} layer`,
+        message: `Layer violation: ${sourceType.name} (${sourceType.layer}) cannot reference ${targetLayer} layer`,
         file: filePath,
         line,
-        suggestion: `${sourceType.name} (${sourceType.layer}) can only reference: ${sourceType.canReference.join(', ') || 'nothing'}. Found reference to ${targetLayer} in [${text}](${link})`,
+        suggestion: `${sourceType.name} (${sourceType.layer}) can only reference: ${sourceType.canReference.join(', ') || 'same layer only'}. Found reference to ${targetLayer} in [${text}](${link})`,
       });
     }
   }

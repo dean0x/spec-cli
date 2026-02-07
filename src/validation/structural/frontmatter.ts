@@ -148,7 +148,7 @@ export function validateFrontmatter(
 
   // Validate specific field values
   if (frontmatter.status) {
-    const validStatuses = ['draft', 'active', 'deprecated', 'superseded', 'proposed', 'accepted', 'rejected'];
+    const validStatuses = ['draft', 'active', 'deprecated', 'superseded', 'proposed', 'accepted', 'rejected', 'planned'];
     if (!validStatuses.includes(frontmatter.status as string)) {
       issues.push({
         severity: 'warning',
