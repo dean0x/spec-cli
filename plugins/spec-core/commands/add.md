@@ -1,5 +1,6 @@
 ---
 description: Create a new specification component from template
+allowed-tools: Read, Write, Glob, Grep, Bash(mkdir:*)
 ---
 
 # /spec add

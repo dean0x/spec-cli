@@ -1,5 +1,6 @@
 ---
 description: Remove a feature and its owned components
+allowed-tools: Read, Write, Edit, Glob, Grep, Task, Bash(rm:*), Bash(git status:*)
 ---
 
 # /spec remove

@@ -67,7 +67,7 @@ export function parseFrontmatter(
  * Required frontmatter fields by component type
  */
 export const REQUIRED_FRONTMATTER: Record<string, string[]> = {
-  schema: ['title', 'domain'],
+  schema: ['title', 'domain', 'status'],
   pattern: ['title', 'status'],
   decision: ['title', 'status', 'date'],
   domain: ['title'],
@@ -75,6 +75,14 @@ export const REQUIRED_FRONTMATTER: Record<string, string[]> = {
   feature: ['title', 'status'],
   product: ['title'],
   api: ['title', 'version'],
+  infrastructure: ['title'],
+  security: ['title'],
+  operations: ['title'],
+  frontend: ['title'],
+  diagram: ['title'],
+  overview: ['title'],
+  'planning-doc': ['title'],
+  framework: ['title'],
 };
 
 /**
@@ -84,7 +92,7 @@ export const RECOMMENDED_FRONTMATTER: Record<string, string[]> = {
   schema: ['description', 'version'],
   pattern: ['description', 'related'],
   decision: ['deciders', 'supersedes'],
-  feature: ['priority', 'dependencies'],
+  feature: ['priority', 'dependencies', 'product'],
 };
 
 /**

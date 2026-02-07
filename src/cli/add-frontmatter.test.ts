@@ -92,7 +92,7 @@ describe('generateFrontmatter', () => {
     );
     expect(fields.title).toBe('Schema: Billing');
     expect(fields.domain).toBe('billing');
-    expect(fields.status).toBeUndefined();
+    expect(fields.status).toBe('draft');
   });
 
   it('generates decision frontmatter with extracted status and date', () => {

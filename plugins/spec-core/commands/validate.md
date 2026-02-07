@@ -1,5 +1,6 @@
 ---
 description: Validate specification structure, links, layers, and frontmatter
+allowed-tools: Read, Glob, Grep, Task
 ---
 
 # /spec validate
@@ -43,7 +44,7 @@ Enforces per-type dependency rules. Each component type defines which layers it 
 - **Planning** types reference all lower layers (framework references all layers)
 
 #### 3. Frontmatter (MISSING_REQUIRED_FIELD, MISSING_FRONTMATTER)
-- Schema components require: title, domain
+- Schema components require: title, domain, status
 - Pattern components require: title, status
 - Decision components require: title, status, date
 - Feature components require: title, status

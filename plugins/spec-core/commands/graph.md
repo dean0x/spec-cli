@@ -1,5 +1,6 @@
 ---
 description: Analyze and visualize specification dependencies
+allowed-tools: Read, Glob, Grep, Task
 ---
 
 # /spec graph
