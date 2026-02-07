@@ -1,3 +1,7 @@
+---
+user-invocable: false
+---
+
 # Spec Authoring Skill
 
 Guidance for authoring specifications that follow the composable specification framework.
