@@ -201,16 +201,20 @@ export function resolveSpecCliPaths(projectRoot?: string): PathResult<SpecCliPat
 export function getAssetPath(assetType: AssetType, name: string): string {
   const packageRoot = getPackageRoot();
 
-  // Assets are in the assets/ directory at package root
-  const assetsDir = join(packageRoot, 'assets', assetType);
+  // Plugin assets (agents, commands, skills) live in plugins/spec-core/
+  // Non-plugin assets (templates, schemas) stay in assets/
+  const isPluginAsset = assetType === 'agents' || assetType === 'commands' || assetType === 'skills';
+  const baseDir = isPluginAsset
+    ? join(packageRoot, 'plugins', 'spec-core', assetType)
+    : join(packageRoot, 'assets', assetType);
 
   // Handle special case for skills which have subdirectories
   if (assetType === 'skills' && !name.includes('/')) {
     // skills/spec-authoring/SKILL.md -> skills/{name}/SKILL.md
-    return join(assetsDir, name, 'SKILL.md');
+    return join(baseDir, name, 'SKILL.md');
   }
 
-  return join(assetsDir, name);
+  return join(baseDir, name);
 }
 
 /**

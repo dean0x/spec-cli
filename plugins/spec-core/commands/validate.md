@@ -1,3 +1,7 @@
+---
+description: Validate specification structure, links, layers, and frontmatter
+---
+
 # /spec validate
 
 Validates the structural and semantic integrity of specification documents.
@@ -30,14 +34,13 @@ Validates the structural and semantic integrity of specification documents.
 - External links (http/https) are skipped
 
 #### 2. Layer Rules (LAYER_VIOLATION)
-Enforces dependency hierarchy:
-```
-planning    → can reference all
-product     → reference, domain, supporting
-supporting  → reference, domain
-domain      → reference only
-reference   → nothing
-```
+Enforces per-type dependency rules. Each component type defines which layers it can reference:
+- **Reference layer** types (schema, pattern) can reference domain and supporting
+- **Decision** (reference) can also reference planning
+- **Domain** types reference only reference (domain-topic also references supporting)
+- **Supporting** types reference reference and domain (diagram also references supporting)
+- **Product** types reference reference, domain, and supporting (product also references planning)
+- **Planning** types reference all lower layers (framework references all layers)
 
 #### 3. Frontmatter (MISSING_REQUIRED_FIELD, MISSING_FRONTMATTER)
 - Schema components require: title, domain

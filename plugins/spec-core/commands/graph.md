@@ -1,3 +1,7 @@
+---
+description: Analyze and visualize specification dependencies
+---
+
 # /spec graph
 
 Analyze and visualize specification dependencies.

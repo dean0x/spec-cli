@@ -22,15 +22,23 @@ Use `/spec add` to create new components from templates:
 
 ## Layer Rules
 
-**Dependencies flow DOWN only.** Before adding a link, verify the reference is valid:
+**Per-type canReference.** Before adding a link, verify the reference is valid for the specific component type:
 
-| Source Layer | Can Reference |
-|--------------|---------------|
-| reference | nothing |
-| domain | reference |
-| supporting | reference, domain |
-| product | reference, domain, supporting |
-| planning | all layers |
+| Type | Layer | Can Reference |
+|------|-------|---------------|
+| schema | reference | domain, supporting |
+| pattern | reference | domain, supporting |
+| decision | reference | domain, supporting, planning |
+| domain | domain | reference |
+| domain-topic | domain | reference, supporting |
+| infrastructure, security, operations, frontend, api | supporting | reference, domain |
+| diagram | supporting | reference, domain, supporting |
+| product | product | reference, domain, supporting, planning |
+| feature | product | reference, domain, supporting |
+| overview, planning-doc | planning | reference, domain, supporting, product |
+| framework | planning | all layers |
+
+**Key:** Reference-layer types (schema, pattern, decision) can reference domain and supporting layers to discuss the concepts they formalize.
 
 ### Layer Locations
 

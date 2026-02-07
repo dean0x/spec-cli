@@ -58,12 +58,10 @@
   },
   "files": [
     "dist",
+    "plugins",
     "assets",
     ".claude-plugin"
   ],
-  "claude-plugin": {
-    "manifest": ".claude-plugin/plugin.json"
-  },
   "engines": {
     "node": ">=18.0.0"
   }

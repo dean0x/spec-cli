@@ -1,0 +1,15 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "spec-cli",
+  "description": "Composable specification framework for layered technical documentation",
+  "owner": { "name": "dean0x" },
+  "plugins": [
+    {
+      "name": "spec-core",
+      "source": "./plugins/spec-core",
+      "description": "Commands, agents, and skills for managing layered technical documentation",
+      "version": "0.1.0",
+      "keywords": ["specification", "documentation", "validation", "layers"]
+    }
+  ]
+}

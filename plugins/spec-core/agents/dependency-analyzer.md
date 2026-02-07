@@ -1,3 +1,8 @@
+---
+name: Dependency Analyzer
+description: Builds and analyzes the specification dependency graph
+---
+
 # Dependency Analyzer Agent
 
 Builds and traverses the specification dependency graph to analyze relationships between documents.
@@ -97,15 +102,15 @@ Transitive dependencies:
 #### Layer Violations
 
 ```
-Found 3 layer violations:
+Found 2 layer violations:
 
-docs/architecture/decisions/adr-001.md:15
-  → docs/domains/billing/index.md
-  Error: reference layer cannot reference domain layer
+docs/domains/billing/index.md:15
+  → docs/products/web/features/billing.md
+  Error: domain layer cannot reference product layer
 
-docs/schemas/billing.md:42
-  → docs/domains/billing/subscriptions.md
-  Error: reference layer cannot reference domain layer
+docs/infrastructure/redis.md:42
+  → docs/overview/architecture.md
+  Error: supporting layer cannot reference planning layer
 ```
 
 ## Output Formats

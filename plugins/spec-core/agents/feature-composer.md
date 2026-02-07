@@ -1,3 +1,8 @@
+---
+name: Feature Composer
+description: Scaffolds new specification components using templates
+---
+
 # Feature Composer Agent
 
 Scaffolds new specification components using templates, updates indexes, and manages feature manifests.

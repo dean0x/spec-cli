@@ -1,3 +1,7 @@
+---
+description: Create a new specification component from template
+---
+
 # /spec add
 
 Creates a new specification component from a template.

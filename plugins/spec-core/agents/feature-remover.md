@@ -1,3 +1,8 @@
+---
+name: Feature Remover
+description: Safely removes features with impact analysis and reference markers
+---
+
 # Feature Remover Agent
 
 Safely removes features and their owned components while marking breaking references.

@@ -1,3 +1,7 @@
+---
+description: Remove a feature and its owned components
+---
+
 # /spec remove
 
 Remove a feature and its owned components.

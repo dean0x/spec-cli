@@ -1,0 +1,28 @@
+{
+  "name": "spec-core",
+  "description": "Composable specification framework for managing layered technical documentation",
+  "author": { "name": "dean0x" },
+  "version": "0.1.0",
+  "repository": "https://github.com/dean0x/spec-cli",
+  "license": "MIT",
+  "commands": [
+    {
+      "name": "spec",
+      "description": "Specification management commands",
+      "subcommands": [
+        { "name": "validate", "handler": "./commands/validate.md" },
+        { "name": "add", "handler": "./commands/add.md" },
+        { "name": "graph", "handler": "./commands/graph.md" },
+        { "name": "remove", "handler": "./commands/remove.md" }
+      ]
+    }
+  ],
+  "agents": [
+    "structural-validator",
+    "semantic-validator",
+    "feature-composer",
+    "dependency-analyzer",
+    "feature-remover"
+  ],
+  "skills": ["spec-authoring"]
+}

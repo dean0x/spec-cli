@@ -1,3 +1,8 @@
+---
+name: Semantic Validator
+description: LLM-powered validation for contradictions, completeness, terminology, and staleness
+---
+
 # Semantic Validator Agent
 
 Uses LLM-powered analysis to detect content-level issues in specifications that structural validation cannot catch.

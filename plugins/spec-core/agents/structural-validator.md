@@ -1,3 +1,8 @@
+---
+name: Structural Validator
+description: Validates structural integrity of specifications
+---
+
 # Structural Validator Agent
 
 Validates the structural integrity of specifications in the documentation system.
@@ -10,17 +15,28 @@ This agent performs comprehensive structural validation of specification documen
 3. **Frontmatter Validation** - YAML frontmatter matches component type schemas
 4. **Orphan Detection** - All documents are referenced from at least one index
 
-## Layer Hierarchy
+## Layer Rules (Per-Type canReference)
 
-Dependencies flow DOWN only:
+Each component type defines which layers it can reference. Some reference-layer types (schemas, patterns, decisions) can reference domain and supporting layers to discuss concepts they formalize.
 
-```
-planning    → can reference all layers
-product     → reference, domain, supporting
-supporting  → reference, domain
-domain      → reference only
-reference   → nothing (foundation)
-```
+| Type | Layer | Can Reference |
+|------|-------|---------------|
+| schema | reference | domain, supporting |
+| pattern | reference | domain, supporting |
+| decision | reference | domain, supporting, planning |
+| domain | domain | reference |
+| domain-topic | domain | reference, supporting |
+| infrastructure | supporting | reference, domain |
+| security | supporting | reference, domain |
+| operations | supporting | reference, domain |
+| frontend | supporting | reference, domain |
+| api | supporting | reference, domain |
+| diagram | supporting | reference, domain, supporting |
+| product | product | reference, domain, supporting, planning |
+| feature | product | reference, domain, supporting |
+| overview | planning | reference, domain, supporting, product |
+| planning-doc | planning | reference, domain, supporting, product |
+| framework | planning | all layers |
 
 ## Component Types by Layer
 
@@ -99,9 +115,9 @@ Find documents not referenced anywhere:
     ✗ [BROKEN_LINK]:12 Broken link: [subscriptions](./subscriptions.md)
       → Check if "docs/schemas/subscriptions.md" exists
 
-  docs/schemas/tenants.md
-    ✗ [LAYER_VIOLATION]:8 Layer violation: reference cannot reference domain
-      → Schema (reference) can only reference: nothing
+  docs/domains/billing/index.md
+    ✗ [LAYER_VIOLATION]:8 Layer violation: domain cannot reference product
+      → Domain (domain) can only reference: reference
 
   docs/domains/billing/api.md
     ⚠ [ORPHAN_DOCUMENT] Not referenced by any index
