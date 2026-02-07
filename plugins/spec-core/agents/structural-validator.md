@@ -15,28 +15,21 @@ This agent performs comprehensive structural validation of specification documen
 3. **Frontmatter Validation** - YAML frontmatter matches component type schemas
 4. **Orphan Detection** - All documents are referenced from at least one index
 
-## Layer Rules (Per-Type canReference)
+## Layer Rules (Strict Hierarchy)
 
-Each component type defines which layers it can reference. Some reference-layer types (schemas, patterns, decisions) can reference domain and supporting layers to discuss concepts they formalize.
+Dependencies flow downward only. Each layer can reference its own layer and any layer below it:
 
-| Type | Layer | Can Reference |
-|------|-------|---------------|
-| schema | reference | domain, supporting |
-| pattern | reference | domain, supporting |
-| decision | reference | domain, supporting, planning |
-| domain | domain | reference |
-| domain-topic | domain | reference, supporting |
-| infrastructure | supporting | reference, domain |
-| security | supporting | reference, domain |
-| operations | supporting | reference, domain |
-| frontend | supporting | reference, domain |
-| api | supporting | reference, domain |
-| diagram | supporting | reference, domain, supporting |
-| product | product | reference, domain, supporting, planning |
-| feature | product | reference, domain, supporting |
-| overview | planning | reference, domain, supporting, product |
-| planning-doc | planning | reference, domain, supporting, product |
-| framework | planning | all layers |
+| Layer | Can Reference (other layers) |
+|-------|----------------------------|
+| reference | (none — foundation only) |
+| domain | reference |
+| supporting | reference, domain |
+| product | reference, domain, supporting |
+| planning | reference, domain, supporting, product |
+
+**Exception:** `decision` type (reference layer) can reference all layers — ADRs are cross-cutting documents that inherently discuss domain, supporting, product, and planning concerns.
+
+> Source of truth: `COMPONENT_TYPES` in `src/core/types.ts`
 
 ## Component Types by Layer
 

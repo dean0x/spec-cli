@@ -20,7 +20,7 @@ export interface ComponentType {
 }
 
 /**
- * Layer hierarchy (default dependencies flow DOWN only):
+ * Layer hierarchy (strict — dependencies flow DOWN only):
  *
  * planning    -> can reference everything
  * product     -> reference, domain, supporting
@@ -28,10 +28,11 @@ export interface ComponentType {
  * domain      -> reference
  * reference   -> nothing (foundation)
  *
- * Per-type `canReference` overrides this default hierarchy.
- * Some reference-layer types (decisions, patterns, schemas) need to
- * discuss domain/supporting concepts, so their canReference is broader
- * than the strict hierarchy would allow.
+ * Exception: `decision` type (reference layer) can reference all layers.
+ * ADRs are cross-cutting documents that inherently discuss domain,
+ * supporting, product, and planning concerns.
+ *
+ * Source of truth: per-type `canReference` arrays in COMPONENT_TYPES below.
  */
 export const LAYER_HIERARCHY: Record<ComponentLayer, number> = {
   reference: 0,
@@ -50,19 +51,19 @@ export const COMPONENT_TYPES: Record<string, ComponentType> = {
     layer: 'reference',
     name: 'Schema',
     directory: 'docs/schemas',
-    canReference: ['domain', 'supporting'],
+    canReference: [],
   },
   pattern: {
     layer: 'reference',
     name: 'Pattern',
     directory: 'docs/architecture/patterns',
-    canReference: ['domain', 'supporting'],
+    canReference: [],
   },
   decision: {
     layer: 'reference',
     name: 'Decision',
     directory: 'docs/architecture/decisions',
-    canReference: ['domain', 'supporting', 'planning'],
+    canReference: ['domain', 'supporting', 'product', 'planning'],
   },
 
   // Domain Layer (can reference: reference)
@@ -76,7 +77,7 @@ export const COMPONENT_TYPES: Record<string, ComponentType> = {
     layer: 'domain',
     name: 'Domain Topic',
     directory: 'docs/domains/*',
-    canReference: ['reference', 'supporting'],
+    canReference: ['reference'],
   },
 
   // Supporting Layer (can reference: reference, domain)
@@ -114,7 +115,7 @@ export const COMPONENT_TYPES: Record<string, ComponentType> = {
     layer: 'supporting',
     name: 'Diagram',
     directory: 'docs/diagrams',
-    canReference: ['reference', 'domain', 'supporting'],
+    canReference: ['reference', 'domain'],
   },
 
   // Product Layer (can reference: reference, domain, supporting)
@@ -122,7 +123,7 @@ export const COMPONENT_TYPES: Record<string, ComponentType> = {
     layer: 'product',
     name: 'Product',
     directory: 'docs/products',
-    canReference: ['reference', 'domain', 'supporting', 'planning'],
+    canReference: ['reference', 'domain', 'supporting'],
   },
   feature: {
     layer: 'product',
@@ -252,20 +253,6 @@ export function getComponentTypeKeyFromPath(
   }
 
   return best;
-}
-
-/**
- * Check if a reference from sourceLayer to targetLayer is valid
- */
-export function isValidLayerReference(
-  sourceLayer: ComponentLayer,
-  targetLayer: ComponentLayer
-): boolean {
-  const sourceLevel = LAYER_HIERARCHY[sourceLayer];
-  const targetLevel = LAYER_HIERARCHY[targetLayer];
-
-  // Can only reference layers at same level or below
-  return targetLevel <= sourceLevel;
 }
 
 /**

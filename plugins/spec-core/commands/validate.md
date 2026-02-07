@@ -35,13 +35,13 @@ Validates the structural and semantic integrity of specification documents.
 - External links (http/https) are skipped
 
 #### 2. Layer Rules (LAYER_VIOLATION)
-Enforces per-type dependency rules. Each component type defines which layers it can reference:
-- **Reference layer** types (schema, pattern) can reference domain and supporting
-- **Decision** (reference) can also reference planning
-- **Domain** types reference only reference (domain-topic also references supporting)
-- **Supporting** types reference reference and domain (diagram also references supporting)
-- **Product** types reference reference, domain, and supporting (product also references planning)
-- **Planning** types reference all lower layers (framework references all layers)
+Enforces strict layer hierarchy — dependencies flow downward only:
+- **Reference layer** types (schema, pattern) cannot reference other layers
+- **Decision** (reference) is the exception — can reference all layers (ADRs are cross-cutting)
+- **Domain** types can only reference reference layer
+- **Supporting** types can reference reference and domain
+- **Product** types can reference reference, domain, and supporting
+- **Planning** types can reference all lower layers (framework references all layers)
 
 #### 3. Frontmatter (MISSING_REQUIRED_FIELD, MISSING_FRONTMATTER)
 - Schema components require: title, domain, status

@@ -8,7 +8,6 @@
 
 import {
   getComponentTypeFromPath,
-  isValidLayerReference,
   type ComponentLayer,
 } from './types.js';
 
@@ -204,10 +203,13 @@ export function addEdge(
   fromNode.linksTo.add(to);
   toNode.linkedFrom.add(from);
 
-  // Check for layer violation
+  // Check for layer violation using per-type canReference
   let layerViolation = false;
-  if (fromNode.layer && toNode.layer) {
-    layerViolation = !isValidLayerReference(fromNode.layer, toNode.layer);
+  if (fromNode.layer && toNode.layer && fromNode.layer !== toNode.layer) {
+    const sourceType = getComponentTypeFromPath(from);
+    if (sourceType) {
+      layerViolation = !sourceType.canReference.includes(toNode.layer);
+    }
   }
 
   const edge: GraphEdge = {

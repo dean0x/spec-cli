@@ -1,12 +1,17 @@
 /**
  * Layer Rules Validator
  *
- * Enforces the layer dependency hierarchy:
- * - Reference layer (schemas, patterns, decisions) cannot reference other layers
+ * Enforces strict layer dependency hierarchy (dependencies flow DOWN only):
+ * - Reference layer: schemas and patterns cannot reference other layers
  * - Domain layer can only reference reference layer
  * - Supporting layer can reference reference and domain
  * - Product layer can reference reference, domain, and supporting
  * - Planning layer can reference all layers
+ *
+ * Exception: decisions (reference layer) can reference all layers — ADRs are
+ * cross-cutting documents that discuss domain, supporting, product, and planning.
+ *
+ * Source of truth: per-type `canReference` arrays in COMPONENT_TYPES (src/core/types.ts).
  */
 
 import type {
