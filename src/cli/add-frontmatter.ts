@@ -1,5 +1,5 @@
 /**
- * spec-cli add-frontmatter command
+ * spec add-frontmatter command
  *
  * Adds YAML frontmatter to markdown files that are missing it.
  * Dry-run by default — use --write to apply changes.
@@ -16,10 +16,10 @@ import { getComponentTypeKeyFromPath } from '../core/types.js';
 import { parseFrontmatter, REQUIRED_FRONTMATTER } from '../validation/structural/frontmatter.js';
 
 const HELP_TEXT = `
-spec-cli add-frontmatter - Add YAML frontmatter to markdown files
+spec add-frontmatter - Add YAML frontmatter to markdown files
 
 Usage:
-  spec-cli add-frontmatter [options]
+  spec add-frontmatter [options]
 
 Options:
   --write         Apply changes (dry-run by default)
@@ -28,9 +28,9 @@ Options:
   --help, -h      Show this help message
 
 Examples:
-  spec-cli add-frontmatter                 # Preview what would be added
-  spec-cli add-frontmatter --write         # Apply frontmatter to files
-  spec-cli add-frontmatter --filter=schema # Only process schema files
+  spec add-frontmatter                 # Preview what would be added
+  spec add-frontmatter --write         # Apply frontmatter to files
+  spec add-frontmatter --filter=schema # Only process schema files
 `;
 
 interface AddFrontmatterOptions {

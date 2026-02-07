@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 /**
- * spec-cli Command Line Interface
+ * spec Command Line Interface
  *
- * Entry point for npx spec-cli commands.
+ * Entry point for npx spec commands.
  */
 
 import { initProject } from './init.js';
@@ -10,13 +10,13 @@ import { runValidation } from './validate.js';
 import { runAddFrontmatter } from './add-frontmatter.js';
 
 const HELP_TEXT = `
-spec-cli - Composable Specification Framework
+spec - Composable Specification Framework
 
 Usage:
-  spec-cli <command> [options]
+  spec <command> [options]
 
 Commands:
-  init              Initialize spec-cli in current project
+  init              Initialize spec in current project
   validate          Run structural validation on docs
   add-frontmatter   Add missing YAML frontmatter to docs
   help              Show this help message
@@ -26,11 +26,11 @@ Options:
   --json      Output results as JSON (validate only)
 
 Examples:
-  spec-cli init
-  spec-cli validate
-  spec-cli validate --json
+  spec init
+  spec validate
+  spec validate --json
 
-For more information, visit: https://github.com/your-org/spec-cli
+For more information, visit: https://github.com/dean0x/spec-cli
 `;
 
 function printHelp(): void {
@@ -61,7 +61,7 @@ async function main(): Promise<void> {
 
     default:
       console.error(`Unknown command: ${command}`);
-      console.error('Run "spec-cli help" for available commands.');
+      console.error('Run "spec help" for available commands.');
       process.exit(1);
   }
 }
