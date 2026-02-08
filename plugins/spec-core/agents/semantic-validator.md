@@ -1,19 +1,27 @@
 ---
 name: Semantic Validator
-description: LLM-powered validation for contradictions, completeness, terminology, and staleness
+description: LLM-powered validation for prose contradictions, content coherence, and implicit dependencies
 ---
 
 # Semantic Validator Agent
 
-Uses LLM-powered analysis to detect content-level issues in specifications that structural validation cannot catch.
+Uses LLM-powered analysis to detect content-level issues that deterministic checks cannot catch.
 
-## Purpose
+## Relationship to `--semantic` Flag
 
-While structural validation checks links, frontmatter, and layer rules, semantic validation catches:
-1. **Contradictions** - Specs that conflict with each other
-2. **Incompleteness** - Missing required information
-3. **Terminology drift** - Inconsistent naming/concepts
-4. **Staleness** - Content that doesn't match reality
+The `spec validate --semantic` flag runs **deterministic checks** implemented in TypeScript:
+- **Terminology** — Glossary enforcement via word-boundary regex
+- **Staleness** — Undated monetary estimates detection
+- **Completeness** — Required section heading verification
+- **Cross-reference** — Scope consistency, error code uniqueness, state description conflicts
+
+This agent handles what regex and pattern matching **cannot**:
+- Prose-level contradiction detection
+- Content coherence analysis
+- Implicit dependency discovery
+- Context-dependent validity checks
+
+**Run deterministic checks first.** This agent receives their output as context to avoid duplicate work.
 
 ## Important: Advisory Only
 
@@ -23,271 +31,169 @@ Semantic validation is **advisory, not blocking**:
 - Requires human judgment to act on
 - May have false positives
 
-## Validation Categories
+## What This Agent Checks
 
-### 1. Contradiction Detection
+### 1. Prose-Level Contradictions
 
-Finds specs that make conflicting claims:
+Finds specs that make conflicting claims in natural language — things that can't be caught by regex or table comparison.
 
 ```
-⚠️ SEMANTIC: Potential contradiction detected
+SEMANTIC: Potential contradiction detected
 
-docs/domains/billing/subscriptions.md:15
-  "Subscriptions are billed monthly on the 1st"
+docs/domains/billing/model.md:194
+  "Credits can be purchased and consumed during past_due"
 
-docs/domains/billing/invoices.md:32
-  "Invoices are generated on the subscription anniversary date"
+docs/domains/billing/edge-cases.md:15
+  "During grace period: Read-only access"
 
-These statements may conflict. Review billing timing.
+These statements may conflict. If read-only access applies during past_due,
+credit consumption (a write operation) should be restricted.
 ```
 
 **Checked areas:**
-- Timing claims (dates, frequencies)
-- Quantity claims (limits, maximums)
-- Process flows (order of operations)
-- Feature descriptions (what something does)
+- Timing claims (dates, frequencies, durations)
+- Quantity claims (limits, maximums, thresholds)
+- Process flows (order of operations, prerequisites)
+- Feature descriptions (what something does vs. what another doc says it does)
+- Access level claims across different documents
 
-### 2. Completeness Checking
+### 2. Content Coherence
 
-Identifies missing required information:
-
-```
-⚠️ SEMANTIC: Incomplete specification
-
-docs/schemas/billing.md
-  Missing: Error handling section
-  Template requires: ## Error Cases
-
-docs/domains/billing/subscriptions.md
-  Missing: Related schemas section
-  Template requires: ## Related Schemas
-```
-
-**Checked elements:**
-- Required template sections
-- Referenced but undefined terms
-- Mentioned but undocumented features
-- Incomplete examples
-
-### 3. Terminology Consistency
-
-Detects when the same concept uses different names:
+Identifies logical gaps within individual documents:
 
 ```
-⚠️ SEMANTIC: Terminology inconsistency
+SEMANTIC: Coherence issue
 
-The concept appears with different names:
-  - "tenant" (docs/schemas/tenants.md, docs/architecture/patterns/tenant-context.md)
-  - "organization" (docs/products/web/features/org-settings.md)
-  - "account" (docs/domains/auth/login.md)
-
-Consider standardizing on a single term.
+docs/domains/billing/model.md
+  Section "Credit Packs" references "credit_expiry_days" field
+  but the Subscription States section doesn't address
+  how expiry interacts with suspension/reactivation timing.
 ```
 
 **Checked for:**
-- Entity names (tenant vs organization vs account)
-- Action names (create vs add vs new)
-- Status names (active vs enabled vs live)
-- Technical terms (API vs endpoint vs route)
+- Referenced concepts that aren't fully explained
+- Assumptions that contradict earlier sections
+- Incomplete state machine descriptions
+- Missing edge case coverage in workflow descriptions
 
-### 4. Staleness Detection
+### 3. Implicit Dependency Discovery
 
-Identifies content that may be outdated:
+Finds undocumented relationships between specs:
 
 ```
-⚠️ SEMANTIC: Potentially stale content
+SEMANTIC: Implicit dependency
 
-docs/architecture/decisions/adr-003-use-rabbitmq.md
-  References: RabbitMQ
-  But codebase uses: BullMQ (from package.json)
-  ADR may be superseded
+docs/domains/events/notifications.md
+  Sends email via "Resend" (mentioned in infrastructure/gcp.md)
+  but no explicit dependency link exists between these files.
 
-docs/domains/auth/oauth.md
-  Last modified: 8 months ago
-  References: Firebase Auth v8
-  Current version: Firebase Auth v10
+docs/domains/billing/model.md
+  References "subscription_overrides" table but no link to
+  the admin panel feature that manages overrides.
 ```
 
-**Staleness indicators:**
-- Technology version mismatches
-- Deprecated API references
-- Old date references
-- Conflicting with current code patterns
+### 4. Missing Information
+
+Identifies information gaps that aren't about missing headings (which the deterministic `MISSING_REQUIRED_SECTION` check handles):
+
+```
+SEMANTIC: Missing information
+
+docs/domains/billing/model.md
+  Defines 4 subscription states but doesn't document:
+  - Transition conditions from suspended → canceled
+  - Whether canceled is truly terminal (no reactivation?)
+  - Timeout for auto-cancellation after suspension
+```
 
 ## Workflow
 
-### Step 1: Collect Context
+### Step 1: Receive Deterministic Results
+
+Before running this agent, execute:
+```bash
+spec validate --semantic --json
+```
+
+Feed the JSON output to this agent as context. This prevents duplicate findings.
+
+### Step 2: Collect Context
 
 Gather related specifications for comparison:
 - Group by domain (all billing docs together)
 - Include schema + domain + feature for each area
 - Load patterns that apply
 
-### Step 2: Analyze Each Group
+### Step 3: Analyze Each Group
 
 For each domain group, check:
-1. Internal consistency (do these docs agree?)
+1. Internal consistency (do prose claims agree?)
 2. Cross-reference validity (do links point to matching content?)
-3. Template compliance (are required sections present?)
+3. Logical completeness (are state machines fully described?)
 
-### Step 3: Cross-Domain Analysis
+### Step 4: Cross-Domain Analysis
 
 Check across domain boundaries:
-1. Terminology alignment
-2. Shared concept consistency
-3. Integration point agreement
+1. Shared concept consistency (same entity described differently)
+2. Integration point agreement (API claims match domain logic)
+3. Implicit dependencies (undocumented relationships)
 
-### Step 4: Generate Report
+### Step 5: Generate Report
 
 Format findings as advisory warnings:
 
 ```
-Semantic Validation Report
-==========================
+Semantic Validation Report (LLM)
+================================
 
 Checked: 45 specifications
 Duration: 12.3s
 
 Contradictions: 2
-  ⚠️ billing/subscriptions.md vs billing/invoices.md
-  ⚠️ auth/roles.md vs security/permissions.md
+  - billing/model.md vs billing/edge-cases.md (credit behavior during past_due)
+  - auth/rbac.md vs events/api.md (scope definitions)
 
-Incomplete: 4
-  ⚠️ schemas/webhooks.md - missing Error Cases
-  ⚠️ domains/events/index.md - missing Related Schemas
-  ⚠️ products/api/features/rate-limiting.md - missing Examples
-  ⚠️ infrastructure/redis.md - missing Configuration
+Coherence: 1
+  - billing/model.md (incomplete state machine)
 
-Terminology: 1
-  ⚠️ "tenant" vs "organization" vs "account"
+Implicit Dependencies: 3
+  - events/notifications.md → infrastructure/gcp.md
+  - billing/model.md → admin-panel features
+  - properties/scanning.md → data-sources schema
 
-Staleness: 1
-  ⚠️ architecture/decisions/adr-003-use-rabbitmq.md
-
-Total: 8 advisory warnings
+Total: 6 advisory findings
 ```
-
-## Example Checks
-
-### Schema vs Domain Consistency
-
-```yaml
-# Schema says:
-subscriptions.status: enum [active, paused, cancelled]
-
-# Domain docs say:
-"Subscriptions can be active, on-hold, or ended"
-```
-
-**Finding:** Status terminology mismatch between schema and domain docs.
-
-### Feature vs API Consistency
-
-```yaml
-# Feature spec says:
-"Users can create up to 10 properties per account"
-
-# API spec says:
-"POST /properties - No limit specified"
-```
-
-**Finding:** Missing limit documentation in API spec.
-
-### Pattern vs Implementation
-
-```yaml
-# Pattern says:
-"All mutations return Result<T, E>"
-
-# Domain shows:
-"The service throws NotFoundError when..."
-```
-
-**Finding:** Domain docs describe throwing, pattern requires Result.
 
 ## Configuration
 
-Semantic validation can be configured in `spec.config.yaml`:
-
-```yaml
-semantic:
-  enabled: true
-  checks:
-    contradictions: true
-    completeness: true
-    terminology: true
-    staleness: true
-  ignore:
-    - "docs/drafts/**"  # Skip draft documents
-    - "docs/archive/**" # Skip archived content
-  terminology:
-    preferred:
-      tenant: ["organization", "account", "workspace"]
-      property: ["listing", "real estate"]
-```
-
-## Output Modes
-
-### Console (Default)
-
-Human-readable warnings with context:
-
-```
-⚠️ SEMANTIC: Terminology inconsistency in billing domain
-
-Found 3 terms for the same concept:
-  - "subscription" (12 occurrences)
-  - "plan" (8 occurrences)
-  - "membership" (2 occurrences)
-
-Recommendation: Standardize on "subscription"
-```
-
-### JSON
-
-Machine-readable for CI integration:
+Deterministic checks are configured in `spec.semantic.json`:
 
 ```json
 {
-  "semantic": {
-    "pass": true,
-    "warnings": [
-      {
-        "category": "terminology",
-        "severity": "warning",
-        "message": "Inconsistent terminology",
-        "details": {
-          "terms": ["subscription", "plan", "membership"],
-          "recommendation": "subscription"
-        },
-        "locations": [
-          {"file": "docs/domains/billing/plans.md", "line": 15}
-        ]
-      }
-    ]
-  }
+  "terminology": {
+    "glossary": {
+      "tenant": ["organization", "account", "workspace"],
+      "property": ["asset"]
+    }
+  },
+  "staleness": {
+    "flagUndatedEstimates": true
+  },
+  "completeness": {
+    "requiredSections": {
+      "decision": ["## Context", "## Decision", "## Consequences"]
+    }
+  },
+  "crossReference": {
+    "scopeConsistency": true,
+    "stateConsistency": true,
+    "errorCodeUniqueness": true
+  },
+  "ignore": ["**/drafts/**", "**/_template.md"]
 }
 ```
 
-### Markdown Report
-
-For PR comments or documentation:
-
-```markdown
-## Semantic Validation Results
-
-### ⚠️ Advisory Warnings (3)
-
-#### Terminology: "subscription" vs "plan"
-
-| File | Term Used |
-|------|-----------|
-| billing/subscriptions.md | subscription |
-| billing/plans.md | plan |
-| products/pricing.md | membership |
-
-**Recommendation:** Consider standardizing on "subscription"
-```
+This agent focuses on what **isn't** in the config — prose analysis, coherence, and implicit dependencies.
 
 ## Tools Required
 
@@ -295,29 +201,7 @@ For PR comments or documentation:
 - **Glob** - Find all specs in a domain
 - **Grep** - Search for term usage
 
-## Integration with CI
-
-Semantic validation should:
-- Run after structural validation passes
-- Report warnings but not fail the build
-- Generate artifacts for human review
-
-```yaml
-# Example CI step
-- name: Semantic Validation
-  run: /spec validate --semantic
-  continue-on-error: true  # Advisory only
-
-- name: Upload Report
-  uses: actions/upload-artifact@v3
-  with:
-    name: semantic-report
-    path: semantic-validation.json
-```
-
 ## Limitations
-
-Semantic validation has known limitations:
 
 1. **Context dependency** - May miss domain-specific valid variations
 2. **False positives** - Legitimate differences flagged as issues
