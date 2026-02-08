@@ -2,6 +2,7 @@
  * spec validate command
  *
  * Runs structural validation on the consumer's docs directory.
+ * Optionally runs semantic validation (advisory) with --semantic.
  * Uses resolveSpecCliPaths() to find docs regardless of where spec-cli is installed.
  */
 
@@ -13,6 +14,11 @@ import {
   formatValidationResult,
   formatValidationResultJson,
 } from '../validation/structural/index.js';
+import {
+  validateSemantics,
+  formatSemanticResult,
+  loadSemanticConfig,
+} from '../validation/semantic/index.js';
 
 const VALIDATE_HELP = `
 spec validate - Run structural validation on documentation
@@ -23,12 +29,14 @@ Usage:
 Options:
   --json        Output results as JSON
   --strict      Fail on warnings too (not just errors)
+  --semantic    Run semantic validation (advisory, never affects exit code)
   --help, -h    Show this help message
 
 Examples:
   spec validate
   spec validate --json
   spec validate --strict
+  spec validate --semantic
 
 Exit codes:
   0 - Validation passed
@@ -38,6 +46,7 @@ Exit codes:
 interface ValidateOptions {
   json: boolean;
   strict: boolean;
+  semantic: boolean;
   help: boolean;
 }
 
@@ -45,6 +54,7 @@ function parseArgs(args: string[]): ValidateOptions {
   return {
     json: args.includes('--json'),
     strict: args.includes('--strict'),
+    semantic: args.includes('--semantic'),
     help: args.includes('--help') || args.includes('-h'),
   };
 }
@@ -86,17 +96,45 @@ export async function runValidation(args: string[]): Promise<void> {
     console.log(`Found ${files.size} markdown files`);
   }
 
-  // Run validation
+  // Run structural validation
   const result = validateStructure(files);
 
-  // Format and print results
+  // Format and print structural results
   if (options.json) {
-    console.log(formatValidationResultJson(result));
+    if (options.semantic) {
+      // Combined JSON output
+      const configResult = loadSemanticConfig(projectRoot);
+      if (!configResult.ok) {
+        console.error(`Semantic config error: ${configResult.error}`);
+        process.exit(1);
+      }
+      const semanticResult = validateSemantics(files, configResult.value);
+
+      const combined = {
+        structural: result,
+        semantic: semanticResult,
+      };
+      console.log(JSON.stringify(combined, null, 2));
+    } else {
+      console.log(formatValidationResultJson(result));
+    }
   } else {
     console.log(formatValidationResult(result));
+
+    // Run semantic validation if requested
+    if (options.semantic) {
+      const configResult = loadSemanticConfig(projectRoot);
+      if (!configResult.ok) {
+        console.error(`Semantic config error: ${configResult.error}`);
+        process.exit(1);
+      }
+
+      const semanticResult = validateSemantics(files, configResult.value);
+      console.log(formatSemanticResult(semanticResult));
+    }
   }
 
-  // Determine exit code
+  // Determine exit code — semantic issues NEVER affect exit code
   if (!result.valid) {
     process.exit(1);
   }

@@ -22,8 +22,9 @@ Commands:
   help              Show this help message
 
 Options:
-  --help, -h  Show help for a command
-  --json      Output results as JSON (validate only)
+  --help, -h   Show help for a command
+  --json       Output results as JSON (validate only)
+  --semantic   Run semantic validation (validate only, advisory)
 
 Examples:
   spec init
