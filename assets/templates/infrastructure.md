@@ -1,7 +1,7 @@
 ---
 title: {{name}}
 description: {{description}}
-provider: GCP
+provider: {{provider}}
 ---
 
 # {{name}}

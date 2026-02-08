@@ -160,5 +160,5 @@ export function formatValidationResultJson(result: ValidationResult): string {
 // Re-export individual validators for direct use
 export { checkAllLinks, checkFileLinks } from './link-checker.js';
 export { checkAllLayerRules, checkFileLayerRules, generateLayerReport } from './layer-rules.js';
-export { validateFrontmatter, parseFrontmatter } from './frontmatter.js';
+export { validateFrontmatter, parseFrontmatter, FRONTMATTER_FIELDS, REQUIRED_FRONTMATTER, RECOMMENDED_FRONTMATTER } from './frontmatter.js';
 export { findOrphans, findSelfReferences, generateOrphanStats } from './orphan-detector.js';

@@ -60,7 +60,7 @@ export const COMMON_VARIABLES: TemplateVariable[] = [
 export const TYPE_VARIABLES: Record<string, TemplateVariable[]> = {
   schema: [
     { name: 'domain', required: true, description: 'Business domain (billing, auth, etc.)' },
-    { name: 'table_name', required: false, description: 'Primary table name', defaultValue: '{{name}}' },
+    { name: 'table_name', required: false, description: 'Primary table name' },
   ],
   pattern: [],
   decision: [
@@ -75,6 +75,7 @@ export const TYPE_VARIABLES: Record<string, TemplateVariable[]> = {
   ],
   feature: [
     { name: 'product', required: true, description: 'Parent product name' },
+    { name: 'priority', required: false, description: 'Feature priority (P0-P4)', defaultValue: 'P2' },
     { name: 'domain', required: false, description: 'Related domain' },
     { name: 'schema', required: false, description: 'Related schema' },
   ],
@@ -82,6 +83,7 @@ export const TYPE_VARIABLES: Record<string, TemplateVariable[]> = {
     { name: 'audience', required: false, description: 'Target audience', defaultValue: 'developers' },
   ],
   infrastructure: [
+    { name: 'provider', required: true, description: 'Cloud/infrastructure provider (AWS, GCP, Azure, etc.)' },
     { name: 'domain', required: false, description: 'Related domain' },
   ],
   security: [
@@ -89,19 +91,24 @@ export const TYPE_VARIABLES: Record<string, TemplateVariable[]> = {
     { name: 'infra', required: false, description: 'Related infrastructure' },
   ],
   operations: [
+    { name: 'oncallTeam', required: false, description: 'On-call team name' },
     { name: 'infra', required: false, description: 'Related infrastructure' },
   ],
   frontend: [
+    { name: 'framework', required: true, description: 'UI framework (React, Vue, Angular, Svelte, etc.)' },
     { name: 'domain', required: false, description: 'Related domain' },
     { name: 'product', required: false, description: 'Related product' },
     { name: 'feature', required: false, description: 'Related feature' },
   ],
   api: [
+    { name: 'baseUrl', required: false, description: 'API base URL path', defaultValue: '/api/v1' },
+    { name: 'authentication', required: false, description: 'Authentication scheme', defaultValue: 'Bearer' },
     { name: 'resource', required: false, description: 'REST resource name' },
     { name: 'schema', required: false, description: 'Related schema' },
     { name: 'domain', required: false, description: 'Related domain' },
   ],
   diagram: [
+    { name: 'diagramType', required: false, description: 'Diagram type (architecture, sequence, flow, etc.)', defaultValue: 'architecture' },
     { name: 'domain', required: false, description: 'Related domain' },
     { name: 'infra', required: false, description: 'Related infrastructure' },
   ],
@@ -139,22 +146,26 @@ export function extractTemplateVariables(content: string): string[] {
 }
 
 /**
- * Apply context to template, replacing {{variables}}
+ * Apply context to template, replacing {{variables}}.
+ *
+ * @param template - Raw template string with {{variable}} placeholders
+ * @param context - Key-value pairs for substitution
+ * @param componentType - Component type key (scopes required/default lookups)
  */
 export function applyTemplate(
   template: string,
-  context: TemplateContext
+  context: TemplateContext,
+  componentType: string
 ): TemplateResult<string> {
   const variables = extractTemplateVariables(template);
   const missing: string[] = [];
+  const typeVars = TYPE_VARIABLES[componentType] ?? [];
 
   // Check for required variables
   for (const varName of variables) {
     if (!(varName in context) && !COMMON_VARIABLES.find(v => v.name === varName && !v.required)) {
-      // Check if it's a required type-specific variable
-      const isRequired = Object.values(TYPE_VARIABLES).some(
-        vars => vars.find(v => v.name === varName && v.required)
-      );
+      // Check if it's a required type-specific variable — scoped to this type only
+      const isRequired = typeVars.some(v => v.name === varName && v.required);
       if (isRequired) {
         missing.push(varName);
       }
@@ -177,9 +188,9 @@ export function applyTemplate(
     if (value !== undefined) {
       result = result.replace(regex, value);
     } else {
-      // Use default or placeholder
+      // Use default or placeholder — scoped to this type
       const commonVar = COMMON_VARIABLES.find(v => v.name === varName);
-      const typeVar = Object.values(TYPE_VARIABLES).flat().find(v => v.name === varName);
+      const typeVar = typeVars.find(v => v.name === varName);
       const defaultValue = commonVar?.defaultValue || typeVar?.defaultValue || `TODO: Set ${varName}`;
       result = result.replace(regex, defaultValue);
     }

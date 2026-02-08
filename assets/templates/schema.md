@@ -1,6 +1,7 @@
 ---
 title: {{name}}
 domain: {{domain}}
+status: draft
 description: {{description}}
 ---
 
@@ -21,7 +22,7 @@ description: {{description}}
 
 ## Relationships
 
-- **belongs_to**: [tenants](./tenants.md)
+- **belongs_to**: [related-schema](./related-schema.md)
 
 ## Indexes
 
@@ -39,9 +40,9 @@ description: {{description}}
 
 ```typescript
 // Example usage in code
-import { {{name}} } from '@repo/database';
+import { {{name}} } from 'your-org/database';
 ```
 
 ## Related Schemas
 
-- [tenants](./tenants.md) - Tenant ownership
+- [related-schema](./related-schema.md) - Tenant ownership

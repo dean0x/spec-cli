@@ -1,7 +1,7 @@
 ---
 title: {{name}}
 description: {{description}}
-type: architecture
+type: {{diagramType}}
 format: mermaid
 ---
 

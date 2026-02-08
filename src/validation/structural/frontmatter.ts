@@ -64,36 +64,105 @@ export function parseFrontmatter(
 }
 
 /**
- * Required frontmatter fields by component type
+ * Frontmatter field definition — single source of truth for required/recommended fields.
  */
-export const REQUIRED_FRONTMATTER: Record<string, string[]> = {
-  schema: ['title', 'domain', 'status'],
-  pattern: ['title', 'status'],
-  decision: ['title', 'status', 'date'],
-  domain: ['title'],
-  'domain-topic': ['title'],
-  feature: ['title', 'status'],
-  product: ['title'],
-  api: ['title', 'version'],
-  infrastructure: ['title'],
-  security: ['title'],
-  operations: ['title'],
-  frontend: ['title'],
-  diagram: ['title'],
-  overview: ['title'],
-  'planning-doc': ['title'],
-  framework: ['title'],
+export interface FrontmatterFieldDef {
+  name: string;
+  requirement: 'required' | 'recommended';
+}
+
+/**
+ * Unified frontmatter field definitions by component type.
+ * REQUIRED_FRONTMATTER and RECOMMENDED_FRONTMATTER are derived from this.
+ */
+export const FRONTMATTER_FIELDS: Record<string, FrontmatterFieldDef[]> = {
+  schema: [
+    { name: 'title', requirement: 'required' },
+    { name: 'domain', requirement: 'required' },
+    { name: 'status', requirement: 'required' },
+    { name: 'description', requirement: 'recommended' },
+    { name: 'version', requirement: 'recommended' },
+  ],
+  pattern: [
+    { name: 'title', requirement: 'required' },
+    { name: 'status', requirement: 'required' },
+    { name: 'description', requirement: 'recommended' },
+    { name: 'related', requirement: 'recommended' },
+  ],
+  decision: [
+    { name: 'title', requirement: 'required' },
+    { name: 'status', requirement: 'required' },
+    { name: 'date', requirement: 'required' },
+    { name: 'deciders', requirement: 'recommended' },
+    { name: 'supersedes', requirement: 'recommended' },
+  ],
+  domain: [
+    { name: 'title', requirement: 'required' },
+  ],
+  'domain-topic': [
+    { name: 'title', requirement: 'required' },
+  ],
+  feature: [
+    { name: 'title', requirement: 'required' },
+    { name: 'status', requirement: 'required' },
+    { name: 'priority', requirement: 'recommended' },
+    { name: 'dependencies', requirement: 'recommended' },
+    { name: 'product', requirement: 'recommended' },
+  ],
+  product: [
+    { name: 'title', requirement: 'required' },
+  ],
+  api: [
+    { name: 'title', requirement: 'required' },
+    { name: 'version', requirement: 'required' },
+  ],
+  infrastructure: [
+    { name: 'title', requirement: 'required' },
+  ],
+  security: [
+    { name: 'title', requirement: 'required' },
+  ],
+  operations: [
+    { name: 'title', requirement: 'required' },
+  ],
+  frontend: [
+    { name: 'title', requirement: 'required' },
+  ],
+  diagram: [
+    { name: 'title', requirement: 'required' },
+  ],
+  overview: [
+    { name: 'title', requirement: 'required' },
+  ],
+  'planning-doc': [
+    { name: 'title', requirement: 'required' },
+  ],
+  framework: [
+    { name: 'title', requirement: 'required' },
+  ],
 };
 
 /**
- * Optional but recommended frontmatter fields
+ * Required frontmatter fields by component type (derived from FRONTMATTER_FIELDS)
  */
-export const RECOMMENDED_FRONTMATTER: Record<string, string[]> = {
-  schema: ['description', 'version'],
-  pattern: ['description', 'related'],
-  decision: ['deciders', 'supersedes'],
-  feature: ['priority', 'dependencies', 'product'],
-};
+export const REQUIRED_FRONTMATTER: Record<string, string[]> = Object.fromEntries(
+  Object.entries(FRONTMATTER_FIELDS).map(([type, fields]) => [
+    type,
+    fields.filter(f => f.requirement === 'required').map(f => f.name),
+  ])
+);
+
+/**
+ * Optional but recommended frontmatter fields (derived from FRONTMATTER_FIELDS)
+ */
+export const RECOMMENDED_FRONTMATTER: Record<string, string[]> = Object.fromEntries(
+  Object.entries(FRONTMATTER_FIELDS)
+    .map(([type, fields]) => {
+      const recommended = fields.filter(f => f.requirement === 'recommended').map(f => f.name);
+      return recommended.length > 0 ? [type, recommended] as const : null;
+    })
+    .filter((entry): entry is readonly [string, string[]] => entry !== null)
+);
 
 /**
  * Validate frontmatter against component type requirements

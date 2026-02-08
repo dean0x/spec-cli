@@ -2,7 +2,7 @@
 title: {{name}}
 description: {{description}}
 runbook: false
-oncall: platform-team
+oncall: {{oncallTeam}}
 ---
 
 # {{name}}
@@ -67,8 +67,8 @@ High-level description of this operational topic.
 
 ### Communication
 
-- Slack: #incidents
-- PagerDuty: team-oncall
+- Slack: #your-incidents-channel
+- PagerDuty: your-oncall-service
 
 ## Related
 

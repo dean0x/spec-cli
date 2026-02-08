@@ -1,7 +1,7 @@
 ---
 title: {{name}}
 status: planned
-priority: P2
+priority: {{priority}}
 dependencies: []
 product: {{product}}
 ---

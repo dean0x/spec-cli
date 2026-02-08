@@ -2,8 +2,8 @@
 title: {{name}}
 version: "1.0"
 description: {{description}}
-baseUrl: /api/v1
-authentication: Bearer
+baseUrl: {{baseUrl}}
+authentication: {{authentication}}
 ---
 
 # {{name}} API
@@ -16,10 +16,10 @@ High-level description of this API.
 
 ## Authentication
 
-All endpoints require Bearer token authentication.
+All endpoints require {{authentication}} token authentication.
 
 ```
-Authorization: Bearer <token>
+Authorization: {{authentication}} <token>
 ```
 
 ## Endpoints
@@ -27,7 +27,7 @@ Authorization: Bearer <token>
 ### List Resources
 
 ```
-GET /api/v1/{{resource}}
+GET {{baseUrl}}/{{resource}}
 ```
 
 **Query Parameters:**
@@ -53,7 +53,7 @@ GET /api/v1/{{resource}}
 ### Get Resource
 
 ```
-GET /api/v1/{{resource}}/:id
+GET {{baseUrl}}/{{resource}}/:id
 ```
 
 **Response:**
@@ -69,7 +69,7 @@ GET /api/v1/{{resource}}/:id
 ### Create Resource
 
 ```
-POST /api/v1/{{resource}}
+POST {{baseUrl}}/{{resource}}
 ```
 
 **Request Body:**
@@ -85,13 +85,13 @@ POST /api/v1/{{resource}}
 ### Update Resource
 
 ```
-PUT /api/v1/{{resource}}/:id
+PUT {{baseUrl}}/{{resource}}/:id
 ```
 
 ### Delete Resource
 
 ```
-DELETE /api/v1/{{resource}}/:id
+DELETE {{baseUrl}}/{{resource}}/:id
 ```
 
 **Response:** `204 No Content`

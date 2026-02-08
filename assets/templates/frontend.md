@@ -1,7 +1,7 @@
 ---
 title: {{name}}
 description: {{description}}
-framework: React
+framework: {{framework}}
 ---
 
 # {{name}}

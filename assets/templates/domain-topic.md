@@ -30,11 +30,11 @@ Explain the key concepts related to this topic.
 
 | Method | Path | Description |
 |--------|------|-------------|
-| GET | /api/v1/{{resource}} | List all |
-| POST | /api/v1/{{resource}} | Create new |
-| GET | /api/v1/{{resource}}/:id | Get by ID |
-| PUT | /api/v1/{{resource}}/:id | Update |
-| DELETE | /api/v1/{{resource}}/:id | Delete |
+| GET | /api/{version}/{{resource}} | List all |
+| POST | /api/{version}/{{resource}} | Create new |
+| GET | /api/{version}/{{resource}}/:id | Get by ID |
+| PUT | /api/{version}/{{resource}}/:id | Update |
+| DELETE | /api/{version}/{{resource}}/:id | Delete |
 
 ### Business Rules
 
