@@ -47,7 +47,7 @@ function extractScopeDefinitions(content: string): Set<string> {
     if (!body) continue;
 
     // Extract individual scope strings
-    const scopePattern = /'([a-z]+:[a-z_:]+)'/g;
+    const scopePattern = /'([a-z]+:[a-z_:-]+)'/g;
     let scopeMatch: RegExpExecArray | null;
     while ((scopeMatch = scopePattern.exec(body)) !== null) {
       if (scopeMatch[1]) {
@@ -74,7 +74,7 @@ function extractScopeUsages(content: string, filePath: string): Array<{ scope: s
     // Only look in table rows
     if (!line.includes('|')) continue;
 
-    const scopePattern = /\b([a-z]+:[a-z_:]+)\b/g;
+    const scopePattern = /\b((?:read|write|admin|manage):[a-z_-]+)\b/g;
     let match: RegExpExecArray | null;
     while ((match = scopePattern.exec(line)) !== null) {
       if (match[1]) {

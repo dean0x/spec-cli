@@ -36,6 +36,30 @@ function normalizeHeading(heading: string): string {
 }
 
 /**
+ * Checks whether any existing heading starts with the required heading text,
+ * accounting for plural suffixes ('s', 'es').
+ */
+function matchesHeadingPrefix(existingHeadings: Set<string>, required: string): boolean {
+  if (existingHeadings.has(required)) return true;
+
+  // Generate stem candidates by stripping trailing 's' and 'es'
+  const candidates = [required];
+  if (required.endsWith('es')) {
+    candidates.push(required.slice(0, -2));
+    candidates.push(required.slice(0, -1)); // just strip 's'
+  } else if (required.endsWith('s')) {
+    candidates.push(required.slice(0, -1));
+  }
+
+  for (const heading of existingHeadings) {
+    for (const candidate of candidates) {
+      if (heading.startsWith(candidate)) return true;
+    }
+  }
+  return false;
+}
+
+/**
  * Check all files for missing required section headings.
  */
 export function checkCompleteness(
@@ -49,6 +73,7 @@ export function checkCompleteness(
 
   for (const [filePath, content] of files) {
     if (matchesIgnorePattern(filePath, config.ignore)) continue;
+    if (matchesIgnorePattern(filePath, config.completeness.excludePaths)) continue;
 
     const typeResult = getComponentTypeKeyFromPath(filePath);
     if (!typeResult) continue;
@@ -60,7 +85,7 @@ export function checkCompleteness(
 
     for (const heading of required) {
       const normalized = normalizeHeading(heading);
-      if (!existingHeadings.has(normalized)) {
+      if (!matchesHeadingPrefix(existingHeadings, normalized)) {
         issues.push({
           severity: 'warning',
           code: 'MISSING_REQUIRED_SECTION',

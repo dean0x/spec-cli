@@ -59,6 +59,27 @@ describe('checkScopeConsistency', () => {
     const issues = checkScopeConsistency(files);
     expect(issues).toHaveLength(0);
   });
+
+  it('does not flag job names or non-scope colon patterns in tables', () => {
+    const typeFile = "type ApiScope = 'read:properties' | 'write:properties'";
+    const endpointFile = [
+      '## Job Schedule',
+      '',
+      '| Job | Schedule | Description |',
+      '|-----|----------|-------------|',
+      '| cleanup:webhook-logs | Daily | Removes old webhook logs |',
+      '| tenant:usage-reset | Monthly | Resets usage counters |',
+      '| analytics:daily-rollup | Daily | Aggregates daily stats |',
+    ].join('\n');
+
+    const files = new Map([
+      ['docs/security/rbac.md', typeFile],
+      ['docs/operations/jobs.md', endpointFile],
+    ]);
+
+    const issues = checkScopeConsistency(files);
+    expect(issues).toHaveLength(0);
+  });
 });
 
 describe('checkErrorCodeUniqueness', () => {

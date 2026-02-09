@@ -88,6 +88,7 @@ describe('defaultSemanticConfig', () => {
     expect(config.terminology.glossary).toEqual({});
     expect(config.staleness.flagUndatedEstimates).toBe(true);
     expect(config.completeness.requiredSections).toEqual({});
+    expect(config.completeness.excludePaths).toEqual([]);
     expect(config.crossReference.scopeConsistency).toBe(true);
     expect(config.crossReference.stateConsistency).toBe(true);
     expect(config.crossReference.errorCodeUniqueness).toBe(true);

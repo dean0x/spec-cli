@@ -21,6 +21,7 @@ export interface SemanticConfig {
   };
   completeness: {
     requiredSections: Record<string, string[]>; // component type key → heading strings
+    excludePaths: string[];
   };
   crossReference: {
     scopeConsistency: boolean;
@@ -43,6 +44,7 @@ export function defaultSemanticConfig(): SemanticConfig {
     },
     completeness: {
       requiredSections: {},
+      excludePaths: [],
     },
     crossReference: {
       scopeConsistency: true,
@@ -114,6 +116,11 @@ function validateConfigShape(raw: unknown): string | null {
         }
       }
     }
+    if (comp['excludePaths'] !== undefined) {
+      if (!Array.isArray(comp['excludePaths']) || !comp['excludePaths'].every((v): v is string => typeof v === 'string')) {
+        return '"completeness.excludePaths" must be an array of strings';
+      }
+    }
   }
 
   // crossReference
@@ -166,6 +173,9 @@ function mergeWithDefaults(raw: Record<string, unknown>): SemanticConfig {
       requiredSections: isRecord(comp['requiredSections'])
         ? (comp['requiredSections'] as Record<string, string[]>)
         : defaults.completeness.requiredSections,
+      excludePaths: Array.isArray(comp['excludePaths'])
+        ? (comp['excludePaths'] as string[])
+        : defaults.completeness.excludePaths,
     },
     crossReference: {
       scopeConsistency:

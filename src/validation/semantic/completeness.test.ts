@@ -6,7 +6,7 @@ import type { SemanticConfig } from './config.js';
 function configWithSections(requiredSections: Record<string, string[]>): SemanticConfig {
   return {
     ...defaultSemanticConfig(),
-    completeness: { requiredSections },
+    completeness: { requiredSections, excludePaths: [] },
   };
 }
 
@@ -104,6 +104,46 @@ describe('checkCompleteness', () => {
       ['docs/architecture/decisions/adr-001.md', '# ADR\n\nNo sections.'],
     ]);
     const config = configWithSections({});
+
+    const issues = checkCompleteness(files, config);
+    expect(issues).toHaveLength(0);
+  });
+
+  it('matches headings by prefix (e.g., "## Table: users" satisfies "## Tables")', () => {
+    const content = [
+      '---',
+      'title: Schema',
+      'domain: core',
+      'status: active',
+      '---',
+      '',
+      '## Table: users',
+      'User schema details.',
+      '',
+      '## Index Strategy',
+      'Index details.',
+    ].join('\n');
+
+    const files = new Map([['docs/schemas/users.md', content]]);
+    const config = configWithSections({
+      schema: ['## Tables', '## Indexes'],
+    });
+
+    const issues = checkCompleteness(files, config);
+    expect(issues).toHaveLength(0);
+  });
+
+  it('skips files matching excludePaths', () => {
+    const files = new Map([
+      ['docs/schemas/index.md', '# Schemas\n\nNo tables section.'],
+    ]);
+    const config: SemanticConfig = {
+      ...defaultSemanticConfig(),
+      completeness: {
+        requiredSections: { schema: ['## Tables', '## Indexes'] },
+        excludePaths: ['**/index.md'],
+      },
+    };
 
     const issues = checkCompleteness(files, config);
     expect(issues).toHaveLength(0);
