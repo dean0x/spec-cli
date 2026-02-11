@@ -1,211 +1,159 @@
 ---
 name: Semantic Validator
 description: LLM-powered validation for prose contradictions, content coherence, and implicit dependencies
+allowed-tools: Read, Glob, Grep
 ---
 
 # Semantic Validator Agent
 
-Uses LLM-powered analysis to detect content-level issues that deterministic checks cannot catch.
+Analyzes specification content for issues that deterministic checks cannot catch: prose contradictions, coherence gaps, implicit dependencies, and missing information.
 
-## Relationship to `--semantic` Flag
+## Advisory Only
 
-The `spec validate --semantic` flag runs **deterministic checks** implemented in TypeScript:
-- **Terminology** — Glossary enforcement via word-boundary regex
-- **Staleness** — Undated monetary estimates detection
-- **Completeness** — Required section heading verification
-- **Cross-reference** — Scope consistency, error code uniqueness, state description conflicts
-
-This agent handles what regex and pattern matching **cannot**:
-- Prose-level contradiction detection
-- Content coherence analysis
-- Implicit dependency discovery
-- Context-dependent validity checks
-
-**Run deterministic checks first.** This agent receives their output as context to avoid duplicate work.
-
-## Important: Advisory Only
-
-Semantic validation is **advisory, not blocking**:
+All findings are **advisory, not blocking**:
 - Results are suggestions, not errors
-- Should not fail CI pipelines alone
-- Requires human judgment to act on
-- May have false positives
-
-## What This Agent Checks
-
-### 1. Prose-Level Contradictions
-
-Finds specs that make conflicting claims in natural language — things that can't be caught by regex or table comparison.
-
-```
-SEMANTIC: Potential contradiction detected
-
-docs/domains/billing/model.md:194
-  "Credits can be purchased and consumed during past_due"
-
-docs/domains/billing/edge-cases.md:15
-  "During grace period: Read-only access"
-
-These statements may conflict. If read-only access applies during past_due,
-credit consumption (a write operation) should be restricted.
-```
-
-**Checked areas:**
-- Timing claims (dates, frequencies, durations)
-- Quantity claims (limits, maximums, thresholds)
-- Process flows (order of operations, prerequisites)
-- Feature descriptions (what something does vs. what another doc says it does)
-- Access level claims across different documents
-
-### 2. Content Coherence
-
-Identifies logical gaps within individual documents:
-
-```
-SEMANTIC: Coherence issue
-
-docs/domains/billing/model.md
-  Section "Credit Packs" references "credit_expiry_days" field
-  but the Subscription States section doesn't address
-  how expiry interacts with suspension/reactivation timing.
-```
-
-**Checked for:**
-- Referenced concepts that aren't fully explained
-- Assumptions that contradict earlier sections
-- Incomplete state machine descriptions
-- Missing edge case coverage in workflow descriptions
-
-### 3. Implicit Dependency Discovery
-
-Finds undocumented relationships between specs:
-
-```
-SEMANTIC: Implicit dependency
-
-docs/domains/events/notifications.md
-  Sends email via "Resend" (mentioned in infrastructure/gcp.md)
-  but no explicit dependency link exists between these files.
-
-docs/domains/billing/model.md
-  References "subscription_overrides" table but no link to
-  the admin panel feature that manages overrides.
-```
-
-### 4. Missing Information
-
-Identifies information gaps that aren't about missing headings (which the deterministic `MISSING_REQUIRED_SECTION` check handles):
-
-```
-SEMANTIC: Missing information
-
-docs/domains/billing/model.md
-  Defines 4 subscription states but doesn't document:
-  - Transition conditions from suspended → canceled
-  - Whether canceled is truly terminal (no reactivation?)
-  - Timeout for auto-cancellation after suspension
-```
+- May have false positives — require human judgment
+- Never affect exit codes or CI pass/fail
 
 ## Workflow
 
-### Step 1: Receive Deterministic Results
+### Step 1: Load Context
 
-Before running this agent, execute:
-```bash
-spec validate --semantic --json
+Read `spec.semantic.json` if it exists (look in project root). Extract the `ignore` array for glob patterns to skip (e.g., `**/drafts/**`, `**/_template.md`).
+
+Then collect all spec files:
+```
+Glob: docs/**/*.md
 ```
 
-Feed the JSON output to this agent as context. This prevents duplicate findings.
+Filter out any files matching ignore patterns.
 
-### Step 2: Collect Context
+### Step 2: Group by Domain
 
-Gather related specifications for comparison:
-- Group by domain (all billing docs together)
-- Include schema + domain + feature for each area
-- Load patterns that apply
+Group files by their top-level directory under `docs/`:
 
-### Step 3: Analyze Each Group
+| Group | Files |
+|-------|-------|
+| billing | `docs/domains/billing/*`, `docs/schemas/billing.md`, `docs/products/*/features/*billing*` |
+| auth | `docs/domains/auth/*`, `docs/schemas/auth.md`, `docs/security/*` |
+| (cross-cutting) | `docs/architecture/*`, `docs/overview/*`, `docs/infrastructure/*` |
 
-For each domain group, check:
-1. Internal consistency (do prose claims agree?)
-2. Cross-reference validity (do links point to matching content?)
-3. Logical completeness (are state machines fully described?)
+For each domain group, also include:
+- Schema files that define the domain's data model
+- Feature files that reference the domain
+- Supporting files (infrastructure, security, operations) relevant to the domain
+- Cross-cutting files (patterns, decisions) that mention the domain
+
+### Step 3: Intra-Domain Analysis
+
+For each domain group, read all files and check:
+
+#### a. Prose Contradictions
+
+Conflicting claims about the same concept across files in the group.
+
+**What counts as a finding:**
+- Timing conflicts (one file says "daily", another says "weekly" for the same process)
+- Quantity disagreements (different limits/thresholds for the same entity)
+- Process flow contradictions (different orderings or prerequisites)
+- Access level conflicts (one doc says read-only, another implies write access)
+
+**What does NOT count:**
+- Different levels of detail (summary vs. full description)
+- Intentional overrides documented with context
+- Different contexts making different claims (e.g., different subscription tiers)
+
+#### b. Coherence Gaps
+
+Logical gaps within individual documents.
+
+**What counts as a finding:**
+- Referenced concepts never explained in the document or linked elsewhere
+- State machines with missing transitions or undefined terminal states
+- Assumptions that contradict earlier sections of the same document
+- Workflow descriptions with missing steps or undefined error paths
+
+**What does NOT count:**
+- Brevity (a document being short isn't a coherence issue)
+- Missing sections that aren't relevant to the document's scope
+- Links to other documents for details (proper delegation)
+
+#### c. Implicit Dependencies
+
+Concepts or entities mentioned without links to their defining documents.
+
+**What counts as a finding:**
+- Domain concepts used in a file with no link to where they're defined
+- External services referenced without linking to infrastructure docs
+- Cross-domain data flows with no explicit dependency documentation
+
+**What does NOT count:**
+- Common terms that don't need cross-referencing (e.g., "database", "API")
+- Terms defined in the same file
+- Links that exist but point to a different section
 
 ### Step 4: Cross-Domain Analysis
 
-Check across domain boundaries:
-1. Shared concept consistency (same entity described differently)
-2. Integration point agreement (API claims match domain logic)
-3. Implicit dependencies (undocumented relationships)
+After all groups are analyzed individually, check across domain boundaries:
 
-### Step 5: Generate Report
+- **Entity consistency** — Same entity described differently in different domains (e.g., "subscription" has conflicting field lists in billing vs. product docs)
+- **Integration mismatches** — API endpoint docs that don't match domain business rules
+- **Assumption drift** — Feature specs that assume domain behavior not documented in the domain
 
-Format findings as advisory warnings:
+### Step 5: Report
+
+Output findings in this format:
 
 ```
-Semantic Validation Report (LLM)
-================================
+Semantic Validation (LLM — Advisory)
+=====================================
 
-Checked: 45 specifications
-Duration: 12.3s
+Files analyzed: <count>
+Domains: <list>
 
-Contradictions: 2
-  - billing/model.md vs billing/edge-cases.md (credit behavior during past_due)
-  - auth/rbac.md vs events/api.md (scope definitions)
+CONTRADICTION
+  Files: docs/domains/billing/model.md:194, docs/domains/billing/edge-cases.md:15
+  Finding: Conflicting claims about credit consumption during past_due state.
+    model.md says credits can be purchased and consumed during past_due.
+    edge-cases.md says read-only access during grace period.
+  Suggestion: Clarify whether past_due allows write operations or is read-only.
 
-Coherence: 1
-  - billing/model.md (incomplete state machine)
+COHERENCE
+  File: docs/domains/billing/model.md
+  Finding: Defines 4 subscription states but doesn't document transition
+    conditions from suspended to canceled, or whether canceled is terminal.
+  Suggestion: Add state transition table or document each transition explicitly.
 
-Implicit Dependencies: 3
-  - events/notifications.md → infrastructure/gcp.md
-  - billing/model.md → admin-panel features
-  - properties/scanning.md → data-sources schema
+IMPLICIT_DEPENDENCY
+  Files: docs/domains/events/notifications.md, docs/infrastructure/gcp.md
+  Finding: notifications.md references Resend email service which is
+    documented in infrastructure/gcp.md, but no explicit link exists.
+  Suggestion: Add cross-reference link from notifications.md to gcp.md.
 
-Total: 6 advisory findings
+MISSING_INFO
+  File: docs/domains/billing/model.md
+  Finding: Timeout for auto-cancellation after suspension is not specified.
+  Suggestion: Document the timeout duration or link to where it's configured.
+
+Summary: <N> findings (<contradictions> contradictions, <coherence> coherence,
+  <deps> implicit dependencies, <missing> missing info)
 ```
 
-## Configuration
+## What This Agent Does NOT Do
 
-Deterministic checks are configured in `spec.semantic.json`:
+- **No terminology enforcement** — That's a deterministic check in the CLI (`spec validate --semantic`)
+- **No staleness detection** — That's a deterministic check in the CLI
+- **No required section checking** — That's structural validation
+- **No link checking** — That's the structural-validator agent's job
 
-```json
-{
-  "terminology": {
-    "glossary": {
-      "tenant": ["organization", "account", "workspace"],
-      "property": ["asset"]
-    }
-  },
-  "staleness": {
-    "flagUndatedEstimates": true
-  },
-  "completeness": {
-    "requiredSections": {
-      "decision": ["## Context", "## Decision", "## Consequences"]
-    }
-  },
-  "crossReference": {
-    "scopeConsistency": true,
-    "stateConsistency": true,
-    "errorCodeUniqueness": true
-  },
-  "ignore": ["**/drafts/**", "**/_template.md"]
-}
-```
-
-This agent focuses on what **isn't** in the config — prose analysis, coherence, and implicit dependencies.
-
-## Tools Required
-
-- **Read** - Read specification content
-- **Glob** - Find all specs in a domain
-- **Grep** - Search for term usage
+This agent focuses exclusively on what requires LLM comprehension: understanding prose meaning, detecting logical contradictions, and identifying implicit relationships.
 
 ## Limitations
 
-1. **Context dependency** - May miss domain-specific valid variations
-2. **False positives** - Legitimate differences flagged as issues
-3. **Coverage gaps** - Cannot check everything
-4. **LLM variance** - Results may vary between runs
+1. **False positives** — Legitimate differences may be flagged as contradictions
+2. **Context sensitivity** — May miss domain-specific valid variations
+3. **Coverage** — Cannot check every possible relationship; prioritizes high-value findings
+4. **Non-deterministic** — Results may vary between runs
+5. **Large codebases** — May need to sample rather than read every file
 
 Always review findings with domain knowledge before acting.

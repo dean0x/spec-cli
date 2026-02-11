@@ -21,88 +21,86 @@ Validates the structural and semantic integrity of specification documents.
 | `--no-layers` | Skip layer rule enforcement |
 | `--no-frontmatter` | Skip frontmatter validation |
 | `--no-orphans` | Skip orphan detection |
-| `--semantic` | Run semantic validation (LLM-powered, advisory only) |
+| `--no-semantic` | Skip semantic validation (structural only) |
 | `--json` | Output results as JSON |
-| `--fix` | Auto-fix simple issues (not yet implemented) |
 
 ## What It Validates
 
-### Structural Validation (Default)
+### Structural (structural-validator agent)
 
-#### 1. Links (BROKEN_LINK)
-- All markdown links `[text](path)` resolve to existing files
-- Relative paths resolved from source file location
-- External links (http/https) are skipped
+Deterministic checks that produce consistent, reproducible results:
 
-#### 2. Layer Rules (LAYER_VIOLATION)
-Enforces strict layer hierarchy — dependencies flow downward only:
-- **Reference layer** types (schema, pattern) cannot reference other layers
-- **Decision** (reference) is the exception — can reference all layers (ADRs are cross-cutting)
-- **Domain** types can only reference reference layer
-- **Supporting** types can reference reference and domain
-- **Product** types can reference reference, domain, and supporting
-- **Planning** types can reference all lower layers (framework references all layers)
+1. **Links** (BROKEN_LINK) — All markdown links resolve to existing files
+2. **Layer Rules** (LAYER_VIOLATION) — Dependencies flow downward only through the layer hierarchy
+3. **Frontmatter** (MISSING_REQUIRED_FIELD, MISSING_FRONTMATTER) — Required YAML frontmatter per component type
+4. **Orphans** (ORPHAN_DOCUMENT) — Documents not referenced from any index or parent
 
-#### 3. Frontmatter (MISSING_REQUIRED_FIELD, MISSING_FRONTMATTER)
-- Schema components require: title, domain, status
-- Pattern components require: title, status
-- Decision components require: title, status, date
-- Feature components require: title, status
+### Semantic (semantic-validator agent)
 
-#### 4. Orphans (ORPHAN_DOCUMENT)
-- Warns about documents not referenced from any index or parent
-- Excludes index.md, README.md, and entry-point files
+LLM-powered analysis that catches what deterministic checks cannot:
 
-### Semantic Validation (--semantic)
+1. **Contradictions** — Conflicting claims about the same concept across documents
+2. **Coherence** — Logical gaps, incomplete state machines, unexplained references within documents
+3. **Implicit Dependencies** — Cross-document relationships with no explicit links
+4. **Missing Information** — Gaps in coverage that aren't about missing headings or sections
 
-When `--semantic` is specified, additional LLM-powered checks run:
+Semantic findings are always **advisory** — they never block or affect exit codes.
 
-#### 1. Contradictions
-Detects specs that make conflicting claims:
+## Implementation
+
+This command orchestrates two agents:
+
+### 1. Structural Validation
+
+Invoke the **structural-validator** agent:
+
+- Globs `docs/**/*.md`
+- Reads each file
+- Checks links, layer rules, frontmatter, orphans
+- Reports errors and warnings with file:line references
+
+### 2. Semantic Validation
+
+Invoke the **semantic-validator** agent (unless `--no-semantic`):
+
+- Reads `spec.semantic.json` for ignore patterns
+- Globs `docs/**/*.md`, filters ignored files
+- Groups files by domain
+- Analyzes contradictions, coherence, implicit dependencies, missing information
+- Reports advisory findings
+
+### 3. Summary
+
+Combine results from both agents:
+
 ```
-⚠️ SEMANTIC: Potential contradiction
-  docs/domains/billing/subscriptions.md:15
-    "Subscriptions are billed monthly on the 1st"
-  docs/domains/billing/invoices.md:32
-    "Invoices are generated on anniversary date"
-```
+Structural Validation
+=====================
+Links: <checked> checked, <broken> broken
+Layers: <checked> checked, <violations> violations
+Frontmatter: <checked> checked, <issues> issues
+Orphans: <unreferenced> unreferenced files
 
-#### 2. Completeness
-Identifies missing required sections:
-```
-⚠️ SEMANTIC: Incomplete specification
-  docs/schemas/billing.md
-    Missing: Error handling section
-```
+Semantic Validation (Advisory)
+==============================
+Contradictions: <count>
+Coherence: <count>
+Implicit Dependencies: <count>
+Missing Information: <count>
 
-#### 3. Terminology
-Detects inconsistent naming:
+Summary: <errors> errors, <warnings> warnings, <semantic> semantic findings (advisory)
 ```
-⚠️ SEMANTIC: Terminology inconsistency
-  Concept appears as: "tenant", "organization", "account"
-  Consider standardizing on a single term.
-```
-
-#### 4. Staleness
-Identifies potentially outdated content:
-```
-⚠️ SEMANTIC: Potentially stale
-  docs/architecture/decisions/adr-003.md
-    References: RabbitMQ
-    Codebase uses: BullMQ
-```
-
-**Important:** Semantic validation is advisory only:
-- Results are suggestions, not blocking errors
-- Should not fail CI pipelines by itself
-- May have false positives
-- Requires human judgment
 
 ## Examples
 
-### Basic validation
+### Full validation (structural + semantic)
 ```
 /spec validate
+```
+
+### Structural only
+```
+/spec validate --no-semantic
 ```
 
 ### Skip orphan warnings
@@ -110,72 +108,24 @@ Identifies potentially outdated content:
 /spec validate --no-orphans
 ```
 
-### JSON output for CI
-```
-/spec validate --json
-```
-
-### With semantic validation
-```
-/spec validate --semantic
-```
-
-Output:
-```
-Structural Validation
-=====================
-✓ Links: 423 checked, 0 broken
-✓ Layers: 423 checked, 0 violations
-✓ Frontmatter: 156 checked, 2 warnings
-⚠ Orphans: 12 unreferenced files
-
-Semantic Validation (Advisory)
-==============================
-⚠ Contradictions: 1 potential issue
-⚠ Terminology: 2 inconsistencies
-✓ Completeness: All required sections present
-✓ Staleness: No outdated content detected
-
-Summary: 0 errors, 17 warnings
-```
-
 ## Exit Codes
 
 | Code | Meaning |
 |------|---------|
-| 0 | All checks passed (or only warnings) |
-| 1 | Structural errors found (broken links, layer violations) |
+| 0 | All structural checks passed (or only warnings/semantic findings) |
+| 1 | Structural errors found (broken links, layer violations, missing required fields) |
 
-Warnings (including all semantic findings) do not cause non-zero exit.
+Semantic findings never cause non-zero exit.
 
-## Implementation
+## CLI vs Agentic Validation
 
-This command invokes the `structural-validator` agent which:
+This command (`/spec validate`) is the **agentic path** — LLM agents read files directly and analyze content.
 
-1. **Collects files**: `Glob docs/**/*.md`
-2. **Reads each file**: Extracts content and metadata
-3. **Runs validators**: Link checker, layer rules, frontmatter, orphan detector
-4. **Reports results**: Formatted output with file:line references
+For **deterministic, CI-friendly validation**, use the CLI:
 
-When `--semantic` is specified, additionally invokes `semantic-validator` agent:
-
-1. **Groups specs**: By domain for context
-2. **Analyzes content**: LLM-powered coherence checks
-3. **Cross-references**: Terminology and consistency
-4. **Reports warnings**: Advisory findings only
-
-## Integration
-
-### CI Pipeline
-```yaml
-validate-specs:
-  script:
-    - claude-code "/spec validate --json" > validation.json
-    - exit $(jq '.stats.errors' validation.json)
-```
-
-### Pre-commit Hook
 ```bash
-#!/bin/bash
-claude-code "/spec validate --no-orphans"
+spec validate                # Structural checks (TypeScript, fast, reproducible)
+spec validate --semantic     # Structural + deterministic semantic (terminology, staleness, completeness)
 ```
+
+The CLI and this command are independent paths. The CLI is better for CI pipelines (deterministic, fast). This command is better for deep analysis (catches prose contradictions, logical gaps).
