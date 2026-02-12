@@ -15,7 +15,7 @@ Validate the structural and semantic integrity of specification documents.
 | `--no-layers` | Skip layer rule enforcement |
 | `--no-frontmatter` | Skip frontmatter validation |
 | `--no-orphans` | Skip orphan detection |
-| `--semantic` | Also run semantic validation (advisory only) |
+| `--no-semantic` | Skip semantic validation |
 | `--json` | Output results as JSON |
 
 ## Execution
@@ -24,24 +24,25 @@ You MUST follow these steps exactly:
 
 1. **Parse options** from the user's input: `$ARGUMENTS`
    - Identify any `--no-*` flags (skip checks for those categories)
-   - Check for `--semantic` flag
    - Check for `--json` flag
 
-2. **Spawn a `Structural Validator` agent** via the Task tool:
-   - `subagent_type`: `Structural Validator`
-   - In the prompt, tell it:
-     - The working directory (current project root with a `docs/` folder)
-     - Which checks to skip based on `--no-*` flags
-     - Whether to output JSON or text
-   - The agent will scan `docs/**/*.md`, run all enabled checks (links, layers, frontmatter, orphans), and return results
+2. **Spawn BOTH agents in parallel** via the Task tool:
 
-3. **If `--semantic` was specified**, ALSO spawn a `Semantic Validator` agent via the Task tool (run in parallel with step 2):
-   - `subagent_type`: `Semantic Validator`
-   - In the prompt, tell it the working directory
-   - It will run terminology, staleness, completeness, and cross-reference checks
-   - Its results are advisory only — never blocking
+   a. **Structural Validator** agent:
+      - `subagent_type`: `Structural Validator`
+      - In the prompt, tell it:
+        - The working directory (current project root with a `docs/` folder)
+        - Which checks to skip based on `--no-*` flags
+        - Whether to output JSON or text
+      - The agent will scan `docs/**/*.md`, run all enabled checks (links, layers, frontmatter, orphans), and return results
 
-4. **Report combined results** to the user:
-   - Show structural results first (errors and warnings)
-   - Show semantic results second (advisory warnings) if `--semantic` was requested
+   b. **Semantic Validator** agent (unless `--no-semantic` was specified):
+      - `subagent_type`: `Semantic Validator`
+      - In the prompt, tell it the working directory
+      - It will run terminology, staleness, completeness, and cross-reference checks
+      - Its results are advisory only — never blocking
+
+3. **Report combined results** to the user:
+   - Structural results first (errors and warnings)
+   - Semantic results second (advisory warnings)
    - If `--json`, combine both into a single JSON object: `{ structural: {...}, semantic: {...} }`
