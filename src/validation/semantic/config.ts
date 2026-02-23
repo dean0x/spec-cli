@@ -15,6 +15,7 @@ import type { PathResult } from '../../core/paths.js';
 export interface SemanticConfig {
   terminology: {
     glossary: Record<string, string[]>; // preferred term → synonyms to flag
+    allowedContexts: string[]; // substrings that suppress warnings when found on the matched line
   };
   staleness: {
     flagUndatedEstimates: boolean;
@@ -38,6 +39,7 @@ export function defaultSemanticConfig(): SemanticConfig {
   return {
     terminology: {
       glossary: {},
+      allowedContexts: [],
     },
     staleness: {
       flagUndatedEstimates: true,
@@ -85,6 +87,11 @@ function validateConfigShape(raw: unknown): string | null {
         if (!Array.isArray(val) || !val.every((v): v is string => typeof v === 'string')) {
           return `"terminology.glossary.${key}" must be an array of strings`;
         }
+      }
+    }
+    if (term['allowedContexts'] !== undefined) {
+      if (!Array.isArray(term['allowedContexts']) || !term['allowedContexts'].every((v): v is string => typeof v === 'string')) {
+        return '"terminology.allowedContexts" must be an array of strings';
       }
     }
   }
@@ -162,6 +169,9 @@ function mergeWithDefaults(raw: Record<string, unknown>): SemanticConfig {
       glossary: isRecord(term['glossary'])
         ? (term['glossary'] as Record<string, string[]>)
         : defaults.terminology.glossary,
+      allowedContexts: Array.isArray(term['allowedContexts'])
+        ? (term['allowedContexts'] as string[])
+        : defaults.terminology.allowedContexts,
     },
     staleness: {
       flagUndatedEstimates:

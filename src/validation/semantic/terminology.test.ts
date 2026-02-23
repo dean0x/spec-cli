@@ -3,10 +3,10 @@ import { checkTerminology } from './terminology.js';
 import { defaultSemanticConfig } from './config.js';
 import type { SemanticConfig } from './config.js';
 
-function configWith(glossary: Record<string, string[]>): SemanticConfig {
+function configWith(glossary: Record<string, string[]>, allowedContexts: string[] = []): SemanticConfig {
   return {
     ...defaultSemanticConfig(),
-    terminology: { glossary },
+    terminology: { glossary, allowedContexts },
   };
 }
 
@@ -116,6 +116,47 @@ describe('checkTerminology', () => {
       ['docs/model.md', 'Some content with account.'],
     ]);
     const config = configWith({});
+
+    const issues = checkTerminology(files, config);
+    expect(issues).toHaveLength(0);
+  });
+
+  it('skips synonyms inside markdown link targets', () => {
+    const files = new Map([
+      ['docs/overview.md', 'See [Organization Context](../patterns/tenant-context.md) for details.'],
+    ]);
+    const config = configWith({ organization: ['tenant'] });
+
+    const issues = checkTerminology(files, config);
+    expect(issues).toHaveLength(0);
+  });
+
+  it('still flags synonyms in markdown link text', () => {
+    const files = new Map([
+      ['docs/overview.md', 'See [tenant guide](./guide.md) for details.'],
+    ]);
+    const config = configWith({ organization: ['tenant'] });
+
+    const issues = checkTerminology(files, config);
+    expect(issues).toHaveLength(1);
+    expect(issues[0]!.message).toContain('tenant');
+  });
+
+  it('skips synonyms inside YAML frontmatter', () => {
+    const files = new Map([
+      ['docs/patterns/repo.md', '---\ntitle: Repository\nrelated: tenant-context\n---\n# Repository Pattern'],
+    ]);
+    const config = configWith({ organization: ['tenant'] });
+
+    const issues = checkTerminology(files, config);
+    expect(issues).toHaveLength(0);
+  });
+
+  it('skips synonyms when allowedContexts match on the same line', () => {
+    const files = new Map([
+      ['docs/patterns/isolation.md', 'This describes multi-tenant isolation boundaries.'],
+    ]);
+    const config = configWith({ organization: ['tenant'] }, ['multi-tenant']);
 
     const issues = checkTerminology(files, config);
     expect(issues).toHaveLength(0);

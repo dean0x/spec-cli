@@ -35,26 +35,37 @@ function buildSynonymRules(glossary: Record<string, string[]>): SynonymRule[] {
 }
 
 /**
- * Returns line indices that are inside fenced code blocks.
- * A fenced code block starts with ``` and ends with ```.
+ * Returns line indices that are inside fenced code blocks or YAML frontmatter.
+ * Code fences start/end with ```. Frontmatter is a `---` block at line 0.
  */
-function getCodeFenceLines(lines: string[]): Set<number> {
-  const fenced = new Set<number>();
-  let inFence = false;
+function getNonProseLines(lines: string[]): Set<number> {
+  const excluded = new Set<number>();
 
+  // Frontmatter: must start at line 0 with `---`
+  if (lines[0]?.trimEnd() === '---') {
+    excluded.add(0);
+    for (let i = 1; i < lines.length; i++) {
+      excluded.add(i);
+      if (lines[i]?.trimEnd() === '---') break;
+    }
+  }
+
+  // Code fences
+  let inFence = false;
   for (let i = 0; i < lines.length; i++) {
+    if (excluded.has(i)) continue;
     const trimmed = lines[i]?.trimStart() ?? '';
     if (trimmed.startsWith('```')) {
-      fenced.add(i);
+      excluded.add(i);
       inFence = !inFence;
       continue;
     }
     if (inFence) {
-      fenced.add(i);
+      excluded.add(i);
     }
   }
 
-  return fenced;
+  return excluded;
 }
 
 /**
@@ -64,18 +75,19 @@ export function checkTerminology(
   files: Map<string, string>,
   config: SemanticConfig,
 ): ValidationIssue[] {
-  const { glossary } = config.terminology;
+  const { glossary, allowedContexts } = config.terminology;
   const rules = buildSynonymRules(glossary);
 
   if (rules.length === 0) return [];
 
+  const lowerContexts = allowedContexts.map((c) => c.toLowerCase());
   const issues: ValidationIssue[] = [];
 
   for (const [filePath, content] of files) {
     if (matchesIgnorePattern(filePath, config.ignore)) continue;
 
     const lines = content.split('\n');
-    const codeFenceLines = getCodeFenceLines(lines);
+    const codeFenceLines = getNonProseLines(lines);
 
     for (let i = 0; i < lines.length; i++) {
       if (codeFenceLines.has(i)) continue;
@@ -83,12 +95,18 @@ export function checkTerminology(
       const line = lines[i];
       if (line === undefined) continue;
 
+      // Strip markdown link targets to avoid matching file paths
+      const lineForMatching = line.replace(/\]\([^)]*\)/g, '](…)');
+      const lowerLine = line.toLowerCase();
+
       for (const rule of rules) {
         // Reset lastIndex since we reuse the regex with 'g' flag
         rule.pattern.lastIndex = 0;
 
         let match: RegExpExecArray | null;
-        while ((match = rule.pattern.exec(line)) !== null) {
+        while ((match = rule.pattern.exec(lineForMatching)) !== null) {
+          if (lowerContexts.some((ctx) => lowerLine.includes(ctx))) continue;
+
           const matchedWord = match[1] ?? match[0];
           issues.push({
             severity: 'warning',
