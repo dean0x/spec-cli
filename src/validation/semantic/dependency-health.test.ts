@@ -114,6 +114,20 @@ describe('checkDependencyHealth', () => {
     expect(issues[0]!.message).toContain('billing');
   });
 
+  it('recognizes schema files as valid dependency targets', () => {
+    const files = new Map([
+      [
+        'docs/products/alefy/features/user-management.md',
+        '---\ntitle: User Management\ndependencies: users\n---\n# Content',
+      ],
+      ['docs/schemas/users.md', '---\ntitle: Users Schema\n---\n# Users'],
+    ]);
+    const config = makeConfig();
+
+    const issues = checkDependencyHealth(files, config);
+    expect(issues).toHaveLength(0);
+  });
+
   it('skips files matching ignore patterns', () => {
     const files = new Map([
       [

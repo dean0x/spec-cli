@@ -20,6 +20,17 @@ function extractDomainFromPath(filePath: string): string | null {
 }
 
 /**
+ * Extract a domain concept name from a schema file path matching `docs/schemas/{name}.md`.
+ * Schemas represent domain data models, so their existence implies a valid domain concept.
+ * Index files are excluded as they are not domain-specific.
+ */
+function extractSchemaNameFromPath(filePath: string): string | null {
+  const match = /^docs\/schemas\/([^/]+)\.md$/.exec(filePath);
+  if (match?.[1] === 'index' || match?.[1] === 'index-strategy') return null;
+  return match?.[1] ?? null;
+}
+
+/**
  * Parse frontmatter from markdown content, returning the raw text between --- delimiters.
  * Returns null if no frontmatter is found.
  */
@@ -73,13 +84,13 @@ export function checkDependencyHealth(
 
   const issues: ValidationIssue[] = [];
 
-  // Build domain existence set by scanning file paths
+  // Build domain existence set by scanning file paths (domain dirs + schema files)
   const existingDomains = new Set<string>();
   for (const filePath of files.keys()) {
     const domain = extractDomainFromPath(filePath);
-    if (domain !== null) {
-      existingDomains.add(domain);
-    }
+    if (domain !== null) existingDomains.add(domain);
+    const schema = extractSchemaNameFromPath(filePath);
+    if (schema !== null) existingDomains.add(schema);
   }
 
   const unhealthySet = new Set(
@@ -102,9 +113,9 @@ export function checkDependencyHealth(
         issues.push({
           severity: 'warning',
           code: 'MISSING_DEPENDENCY',
-          message: `Declared dependency "${dep}" does not match any domain directory`,
+          message: `Declared dependency "${dep}" does not match any domain directory or schema`,
           file: filePath,
-          suggestion: `Verify that docs/domains/${dep}/ exists or remove "${dep}" from dependencies`,
+          suggestion: `Verify that docs/domains/${dep}/ or docs/schemas/${dep}.md exists, or remove "${dep}" from dependencies`,
         });
       }
 
