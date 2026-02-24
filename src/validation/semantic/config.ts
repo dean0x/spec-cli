@@ -29,6 +29,13 @@ export interface SemanticConfig {
     stateConsistency: boolean;
     errorCodeUniqueness: boolean;
   };
+  dependencyHealth: {
+    enabled: boolean;
+    unhealthyDomains: string[];
+  };
+  domainCoupling: {
+    domains: Record<string, string[]>; // domain name → marker terms
+  };
   ignore: string[]; // glob patterns to skip
 }
 
@@ -52,6 +59,13 @@ export function defaultSemanticConfig(): SemanticConfig {
       scopeConsistency: true,
       stateConsistency: true,
       errorCodeUniqueness: true,
+    },
+    dependencyHealth: {
+      enabled: true,
+      unhealthyDomains: [],
+    },
+    domainCoupling: {
+      domains: {},
     },
     ignore: [],
   };
@@ -143,6 +157,40 @@ function validateConfigShape(raw: unknown): string | null {
     }
   }
 
+  // dependencyHealth
+  if (raw['dependencyHealth'] !== undefined) {
+    if (!isRecord(raw['dependencyHealth'])) {
+      return '"dependencyHealth" must be an object';
+    }
+    const dh = raw['dependencyHealth'];
+    if (dh['enabled'] !== undefined && typeof dh['enabled'] !== 'boolean') {
+      return '"dependencyHealth.enabled" must be a boolean';
+    }
+    if (dh['unhealthyDomains'] !== undefined) {
+      if (!Array.isArray(dh['unhealthyDomains']) || !dh['unhealthyDomains'].every((v): v is string => typeof v === 'string')) {
+        return '"dependencyHealth.unhealthyDomains" must be an array of strings';
+      }
+    }
+  }
+
+  // domainCoupling
+  if (raw['domainCoupling'] !== undefined) {
+    if (!isRecord(raw['domainCoupling'])) {
+      return '"domainCoupling" must be an object';
+    }
+    const dc = raw['domainCoupling'];
+    if (dc['domains'] !== undefined) {
+      if (!isRecord(dc['domains'])) {
+        return '"domainCoupling.domains" must be an object';
+      }
+      for (const [key, val] of Object.entries(dc['domains'])) {
+        if (!Array.isArray(val) || !val.every((v): v is string => typeof v === 'string')) {
+          return `"domainCoupling.domains.${key}" must be an array of strings`;
+        }
+      }
+    }
+  }
+
   // ignore
   if (raw['ignore'] !== undefined) {
     if (!Array.isArray(raw['ignore']) || !raw['ignore'].every((v): v is string => typeof v === 'string')) {
@@ -163,6 +211,8 @@ function mergeWithDefaults(raw: Record<string, unknown>): SemanticConfig {
   const stale = isRecord(raw['staleness']) ? raw['staleness'] : {};
   const comp = isRecord(raw['completeness']) ? raw['completeness'] : {};
   const cr = isRecord(raw['crossReference']) ? raw['crossReference'] : {};
+  const dh = isRecord(raw['dependencyHealth']) ? raw['dependencyHealth'] : {};
+  const dc = isRecord(raw['domainCoupling']) ? raw['domainCoupling'] : {};
 
   return {
     terminology: {
@@ -200,6 +250,20 @@ function mergeWithDefaults(raw: Record<string, unknown>): SemanticConfig {
         typeof cr['errorCodeUniqueness'] === 'boolean'
           ? cr['errorCodeUniqueness']
           : defaults.crossReference.errorCodeUniqueness,
+    },
+    dependencyHealth: {
+      enabled:
+        typeof dh['enabled'] === 'boolean'
+          ? dh['enabled']
+          : defaults.dependencyHealth.enabled,
+      unhealthyDomains: Array.isArray(dh['unhealthyDomains'])
+        ? (dh['unhealthyDomains'] as string[])
+        : defaults.dependencyHealth.unhealthyDomains,
+    },
+    domainCoupling: {
+      domains: isRecord(dc['domains'])
+        ? (dc['domains'] as Record<string, string[]>)
+        : defaults.domainCoupling.domains,
     },
     ignore: Array.isArray(raw['ignore']) ? (raw['ignore'] as string[]) : defaults.ignore,
   };

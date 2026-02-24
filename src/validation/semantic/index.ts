@@ -16,6 +16,8 @@ import { checkTerminology } from './terminology.js';
 import { checkStaleness } from './staleness.js';
 import { checkCompleteness } from './completeness.js';
 import { checkCrossReferences } from './cross-reference.js';
+import { checkDependencyHealth } from './dependency-health.js';
+import { checkDomainCoupling } from './domain-coupling.js';
 
 /**
  * Run all semantic validations on a set of files.
@@ -32,6 +34,8 @@ export function validateSemantics(
   allIssues.push(...checkStaleness(files, config));
   allIssues.push(...checkCompleteness(files, config));
   allIssues.push(...checkCrossReferences(files, config));
+  allIssues.push(...checkDependencyHealth(files, config));
+  allIssues.push(...checkDomainCoupling(files, config));
 
   const warnings = allIssues.filter((i) => i.severity === 'warning').length;
   const errors = allIssues.filter((i) => i.severity === 'error').length;
@@ -108,4 +112,6 @@ export {
   checkErrorCodeUniqueness,
   checkStateConsistency,
 } from './cross-reference.js';
+export { checkDependencyHealth } from './dependency-health.js';
+export { checkDomainCoupling } from './domain-coupling.js';
 export { matchesIgnorePattern } from './ignore.js';

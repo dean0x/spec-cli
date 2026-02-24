@@ -80,6 +80,49 @@ describe('loadSemanticConfig', () => {
     expect(result.error).toContain('flagUndatedEstimates');
     expect(result.error).toContain('boolean');
   });
+
+  it('parses dependencyHealth and domainCoupling config sections', () => {
+    const config = {
+      dependencyHealth: {
+        enabled: true,
+        unhealthyDomains: ['billing'],
+      },
+      domainCoupling: {
+        domains: {
+          billing: ['Stripe Checkout', 'packageName'],
+        },
+      },
+    };
+    writeFileSync(join(tempDir, 'spec.semantic.json'), JSON.stringify(config));
+
+    const result = loadSemanticConfig(tempDir);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.dependencyHealth.unhealthyDomains).toEqual(['billing']);
+    expect(result.value.domainCoupling.domains['billing']).toEqual(['Stripe Checkout', 'packageName']);
+  });
+
+  it('returns error for invalid dependencyHealth shape', () => {
+    writeFileSync(
+      join(tempDir, 'spec.semantic.json'),
+      JSON.stringify({ dependencyHealth: { unhealthyDomains: 'not-an-array' } }),
+    );
+    const result = loadSemanticConfig(tempDir);
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.error).toContain('dependencyHealth.unhealthyDomains');
+  });
+
+  it('returns error for invalid domainCoupling shape', () => {
+    writeFileSync(
+      join(tempDir, 'spec.semantic.json'),
+      JSON.stringify({ domainCoupling: { domains: { billing: 'not-an-array' } } }),
+    );
+    const result = loadSemanticConfig(tempDir);
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.error).toContain('domainCoupling.domains.billing');
+  });
 });
 
 describe('defaultSemanticConfig', () => {
@@ -92,6 +135,9 @@ describe('defaultSemanticConfig', () => {
     expect(config.crossReference.scopeConsistency).toBe(true);
     expect(config.crossReference.stateConsistency).toBe(true);
     expect(config.crossReference.errorCodeUniqueness).toBe(true);
+    expect(config.dependencyHealth.enabled).toBe(true);
+    expect(config.dependencyHealth.unhealthyDomains).toEqual([]);
+    expect(config.domainCoupling.domains).toEqual({});
     expect(config.ignore).toEqual([]);
   });
 });
