@@ -18,6 +18,7 @@ import { checkCompleteness } from './completeness.js';
 import { checkCrossReferences } from './cross-reference.js';
 import { checkDependencyHealth } from './dependency-health.js';
 import { checkDomainCoupling } from './domain-coupling.js';
+import { checkPlaceholders } from './placeholders.js';
 
 /**
  * Run all semantic validations on a set of files.
@@ -36,6 +37,7 @@ export function validateSemantics(
   allIssues.push(...checkCrossReferences(files, config));
   allIssues.push(...checkDependencyHealth(files, config));
   allIssues.push(...checkDomainCoupling(files, config));
+  allIssues.push(...checkPlaceholders(files, config));
 
   const warnings = allIssues.filter((i) => i.severity === 'warning').length;
   const errors = allIssues.filter((i) => i.severity === 'error').length;
@@ -114,4 +116,6 @@ export {
 } from './cross-reference.js';
 export { checkDependencyHealth } from './dependency-health.js';
 export { checkDomainCoupling } from './domain-coupling.js';
+export { checkPlaceholders } from './placeholders.js';
+export { getNonProseLines } from './prose.js';
 export { matchesIgnorePattern } from './ignore.js';

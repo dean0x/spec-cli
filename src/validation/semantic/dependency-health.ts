@@ -70,11 +70,114 @@ function extractDependencies(frontmatter: string): string[] {
 }
 
 /**
+ * Build a domain-level directed graph from file dependencies.
+ * Maps each domain to the set of domains it depends on.
+ */
+function buildDomainGraph(
+  files: Map<string, string>,
+  ignorePatterns: string[],
+): Map<string, Set<string>> {
+  const graph = new Map<string, Set<string>>();
+
+  for (const [filePath, content] of files) {
+    if (matchesIgnorePattern(filePath, ignorePatterns)) continue;
+
+    const domain = extractDomainFromPath(filePath);
+    if (domain === null) continue;
+
+    const frontmatter = parseFrontmatterBlock(content);
+    if (frontmatter === null) continue;
+
+    const deps = extractDependencies(frontmatter);
+    if (deps.length === 0) continue;
+
+    const existing = graph.get(domain) ?? new Set<string>();
+    for (const dep of deps) {
+      existing.add(dep);
+    }
+    graph.set(domain, existing);
+  }
+
+  return graph;
+}
+
+/**
+ * Detect cycles in a domain dependency graph using DFS.
+ * Returns an array of cycles, each represented as an array of domain names.
+ */
+function detectCycles(graph: Map<string, Set<string>>): string[][] {
+  const visited = new Set<string>();
+  const inStack = new Set<string>();
+  const cycles: string[][] = [];
+
+  function dfs(node: string, path: string[]): void {
+    if (inStack.has(node)) {
+      // Found a cycle — extract it from the path
+      const cycleStart = path.indexOf(node);
+      if (cycleStart !== -1) {
+        cycles.push([...path.slice(cycleStart), node]);
+      }
+      return;
+    }
+
+    if (visited.has(node)) return;
+
+    visited.add(node);
+    inStack.add(node);
+    path.push(node);
+
+    const neighbors = graph.get(node);
+    if (neighbors) {
+      for (const neighbor of neighbors) {
+        dfs(neighbor, path);
+      }
+    }
+
+    path.pop();
+    inStack.delete(node);
+  }
+
+  for (const node of graph.keys()) {
+    if (!visited.has(node)) {
+      dfs(node, []);
+    }
+  }
+
+  return cycles;
+}
+
+/**
+ * Find the file that declares the dependency completing a cycle.
+ * For cycle [A, B, A], finds a file in domain B that declares dependency on A.
+ */
+function findCycleCompletingFile(
+  files: Map<string, string>,
+  fromDomain: string,
+  toDomain: string,
+  ignorePatterns: string[],
+): string | null {
+  for (const [filePath, content] of files) {
+    if (matchesIgnorePattern(filePath, ignorePatterns)) continue;
+
+    const domain = extractDomainFromPath(filePath);
+    if (domain !== fromDomain) continue;
+
+    const frontmatter = parseFrontmatterBlock(content);
+    if (frontmatter === null) continue;
+
+    const deps = extractDependencies(frontmatter);
+    if (deps.includes(toDomain)) return filePath;
+  }
+
+  return null;
+}
+
+/**
  * Check all files for dependency health issues.
  *
  * Validates that frontmatter `dependencies` declarations reference existing,
  * healthy domains. Flags missing domains and domains marked as unhealthy
- * in config.
+ * in config. Also detects circular dependencies between domains.
  */
 export function checkDependencyHealth(
   files: Map<string, string>,
@@ -128,6 +231,42 @@ export function checkDependencyHealth(
           suggestion: `Review the health of the "${dep}" domain before depending on it`,
         });
       }
+    }
+  }
+
+  // Circular dependency detection
+  const domainGraph = buildDomainGraph(files, config.ignore);
+  const cycles = detectCycles(domainGraph);
+
+  // Deduplicate cycles (same cycle can be found starting from different nodes)
+  const seenCycles = new Set<string>();
+  for (const cycle of cycles) {
+    // Normalize: sort by first element to deduplicate rotations
+    const cycleBody = cycle.slice(0, -1); // remove trailing duplicate
+    const normalized = [...cycleBody].sort().join(' → ');
+    if (seenCycles.has(normalized)) continue;
+    seenCycles.add(normalized);
+
+    const cycleStr = cycle.join(' → ');
+
+    // Find the file that completes the cycle
+    const lastDomain = cycle[cycle.length - 2]; // domain before the repeated start
+    const firstDomain = cycle[0]; // the repeated domain (cycle target)
+    if (lastDomain !== undefined && firstDomain !== undefined) {
+      const completingFile = findCycleCompletingFile(
+        files,
+        lastDomain,
+        firstDomain,
+        config.ignore,
+      );
+
+      issues.push({
+        severity: 'warning',
+        code: 'CIRCULAR_DEPENDENCY',
+        message: `Circular dependency detected: ${cycleStr}`,
+        file: completingFile ?? `docs/domains/${lastDomain}/`,
+        suggestion: `Break the cycle by removing or abstracting one of the dependencies`,
+      });
     }
   }
 

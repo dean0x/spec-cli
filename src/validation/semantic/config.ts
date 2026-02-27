@@ -36,6 +36,10 @@ export interface SemanticConfig {
   domainCoupling: {
     domains: Record<string, string[]>; // domain name → marker terms
   };
+  placeholders?: {
+    enabled: boolean;
+    markers: string[];
+  };
   ignore: string[]; // glob patterns to skip
 }
 
@@ -191,6 +195,22 @@ function validateConfigShape(raw: unknown): string | null {
     }
   }
 
+  // placeholders
+  if (raw['placeholders'] !== undefined) {
+    if (!isRecord(raw['placeholders'])) {
+      return '"placeholders" must be an object';
+    }
+    const ph = raw['placeholders'];
+    if (ph['enabled'] !== undefined && typeof ph['enabled'] !== 'boolean') {
+      return '"placeholders.enabled" must be a boolean';
+    }
+    if (ph['markers'] !== undefined) {
+      if (!Array.isArray(ph['markers']) || !ph['markers'].every((v): v is string => typeof v === 'string')) {
+        return '"placeholders.markers" must be an array of strings';
+      }
+    }
+  }
+
   // ignore
   if (raw['ignore'] !== undefined) {
     if (!Array.isArray(raw['ignore']) || !raw['ignore'].every((v): v is string => typeof v === 'string')) {
@@ -213,6 +233,17 @@ function mergeWithDefaults(raw: Record<string, unknown>): SemanticConfig {
   const cr = isRecord(raw['crossReference']) ? raw['crossReference'] : {};
   const dh = isRecord(raw['dependencyHealth']) ? raw['dependencyHealth'] : {};
   const dc = isRecord(raw['domainCoupling']) ? raw['domainCoupling'] : {};
+  const ph = isRecord(raw['placeholders']) ? raw['placeholders'] : null;
+
+  // Build placeholders config only if present in raw config
+  const placeholdersConfig: { placeholders: { enabled: boolean; markers: string[] } } | Record<string, never> = ph !== null
+    ? {
+        placeholders: {
+          enabled: typeof ph['enabled'] === 'boolean' ? ph['enabled'] : false,
+          markers: Array.isArray(ph['markers']) ? (ph['markers'] as string[]) : [],
+        },
+      }
+    : {};
 
   return {
     terminology: {
@@ -265,6 +296,7 @@ function mergeWithDefaults(raw: Record<string, unknown>): SemanticConfig {
         ? (dc['domains'] as Record<string, string[]>)
         : defaults.domainCoupling.domains,
     },
+    ...placeholdersConfig,
     ignore: Array.isArray(raw['ignore']) ? (raw['ignore'] as string[]) : defaults.ignore,
   };
 }

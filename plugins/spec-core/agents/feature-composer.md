@@ -268,3 +268,13 @@ Before creating any file, validate:
 3. **Path Valid** - Target path matches component type
 4. **No Duplicates** - File doesn't already exist
 5. **Layer Rules** - Any links in template are valid for layer
+
+## Framework Rules
+
+Generated content must comply with these rules from FRAMEWORK.md:
+
+- **Rule 1 (No Duplication):** Never duplicate content. Always link to the canonical source. If information exists elsewhere, reference it with a markdown link.
+- **Rule 3 (File Size Limits):** schema: 400 lines, pattern: 300 lines, domain-topic: 500 lines, feature: 400 lines. All other types: 500 lines max.
+- **Rule 7 (No DDL in ADRs):** Decision records must not contain CREATE TABLE or other DDL. Link to canonical schema files instead.
+- **Rule 8 (Schema Purity):** Schema files contain structure only — DDL, constraints, indexes, RLS, and reference data. Workflows, state machines, behavioral descriptions, and domain logic belong in domain files.
+- **Rule 9 (No Placeholders):** Do not leave TBD, TODO, FIXME, HACK, or PLACEHOLDER markers in generated content. Use honest stubs with "Under Review" banners if content is not yet decided.

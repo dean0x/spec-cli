@@ -47,6 +47,10 @@ Description of alternative and why it was not chosen.
 
 Description of alternative and why it was not chosen.
 
+## Implementation Notes
+
+> Do not duplicate DDL or implementation SQL here. Link to canonical schema files instead.
+
 ## References
 
 - Related documents or external references

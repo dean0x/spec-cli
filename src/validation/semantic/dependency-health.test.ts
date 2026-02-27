@@ -143,4 +143,84 @@ describe('checkDependencyHealth', () => {
     const issues = checkDependencyHealth(files, config);
     expect(issues).toHaveLength(0);
   });
+
+  it('detects A → B → A circular dependency', () => {
+    const files = new Map([
+      [
+        'docs/domains/auth/overview.md',
+        '---\ntitle: Auth\ndependencies: users\n---\n# Auth',
+      ],
+      [
+        'docs/domains/users/overview.md',
+        '---\ntitle: Users\ndependencies: auth\n---\n# Users',
+      ],
+    ]);
+    const config = makeConfig();
+
+    const issues = checkDependencyHealth(files, config);
+    const circularIssues = issues.filter((i) => i.code === 'CIRCULAR_DEPENDENCY');
+    expect(circularIssues).toHaveLength(1);
+    expect(circularIssues[0]!.message).toContain('auth');
+    expect(circularIssues[0]!.message).toContain('users');
+  });
+
+  it('detects A → B → C → A circular dependency', () => {
+    const files = new Map([
+      [
+        'docs/domains/auth/overview.md',
+        '---\ntitle: Auth\ndependencies: users\n---\n# Auth',
+      ],
+      [
+        'docs/domains/users/overview.md',
+        '---\ntitle: Users\ndependencies: billing\n---\n# Users',
+      ],
+      [
+        'docs/domains/billing/overview.md',
+        '---\ntitle: Billing\ndependencies: auth\n---\n# Billing',
+      ],
+    ]);
+    const config = makeConfig();
+
+    const issues = checkDependencyHealth(files, config);
+    const circularIssues = issues.filter((i) => i.code === 'CIRCULAR_DEPENDENCY');
+    expect(circularIssues).toHaveLength(1);
+    expect(circularIssues[0]!.message).toContain('Circular dependency detected');
+  });
+
+  it('does not report circular dependency for acyclic chains', () => {
+    const files = new Map([
+      [
+        'docs/domains/auth/overview.md',
+        '---\ntitle: Auth\ndependencies: users\n---\n# Auth',
+      ],
+      [
+        'docs/domains/users/overview.md',
+        '---\ntitle: Users\ndependencies: billing\n---\n# Users',
+      ],
+      [
+        'docs/domains/billing/overview.md',
+        '---\ntitle: Billing\n---\n# Billing',
+      ],
+    ]);
+    const config = makeConfig();
+
+    const issues = checkDependencyHealth(files, config);
+    const circularIssues = issues.filter((i) => i.code === 'CIRCULAR_DEPENDENCY');
+    expect(circularIssues).toHaveLength(0);
+  });
+
+  it('detects self-dependency', () => {
+    const files = new Map([
+      [
+        'docs/domains/auth/overview.md',
+        '---\ntitle: Auth\ndependencies: auth\n---\n# Auth',
+      ],
+    ]);
+    const config = makeConfig();
+
+    const issues = checkDependencyHealth(files, config);
+    const circularIssues = issues.filter((i) => i.code === 'CIRCULAR_DEPENDENCY');
+    expect(circularIssues).toHaveLength(1);
+    expect(circularIssues[0]!.message).toContain('auth');
+  });
 });

@@ -92,6 +92,33 @@ Concepts or entities mentioned without links to their defining documents.
 - Terms defined in the same file
 - Links that exist but point to a different section
 
+#### d. Schema Purity (for files matching `docs/schemas/*.md`)
+
+Check that content stays within structural scope.
+
+**What counts as a finding:**
+- Workflow descriptions ("when X happens, then Y")
+- State machine transitions ("pending -> resolved -> dismissed")
+- Business rules ("only admins can...")
+- Process flows with multiple steps
+- Behavioral descriptions explaining system reactions to events
+
+**What does NOT count:**
+- DDL (CREATE TABLE, indexes, constraints, RLS policies)
+- Enum value catalogs (list of valid event types, status values)
+- Relationship diagrams (showing foreign key connections)
+- Constraint explanations ("must be unique because...")
+- Column descriptions (what each field stores)
+- "Referenced By" sections
+
+Report format:
+```
+SCHEMA_PURITY
+  File: docs/schemas/events.md
+  Finding: Contains "Alert Status Flow" section describing state transitions
+  Suggestion: Move to appropriate domain file.
+```
+
 ### Step 4: Cross-Domain Analysis
 
 After all groups are analyzed individually, check across domain boundaries:

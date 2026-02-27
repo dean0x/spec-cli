@@ -14,6 +14,8 @@ import { checkAllLinks } from './link-checker.js';
 import { checkAllLayerRules } from './layer-rules.js';
 import { validateFrontmatter } from './frontmatter.js';
 import { findOrphans, findSelfReferences } from './orphan-detector.js';
+import { checkDdlDuplication } from './ddl-checker.js';
+import { checkFileSizes } from './file-size-checker.js';
 
 export interface ValidationOptions {
   checkLinks?: boolean;
@@ -21,6 +23,8 @@ export interface ValidationOptions {
   checkFrontmatter?: boolean;
   checkOrphans?: boolean;
   checkSelfReferences?: boolean;
+  checkDdlDuplication?: boolean;
+  checkFileSizes?: boolean;
 }
 
 const DEFAULT_OPTIONS: ValidationOptions = {
@@ -29,6 +33,8 @@ const DEFAULT_OPTIONS: ValidationOptions = {
   checkFrontmatter: true,
   checkOrphans: true,
   checkSelfReferences: true,
+  checkDdlDuplication: true,
+  checkFileSizes: true,
 };
 
 /**
@@ -76,6 +82,18 @@ export function validateStructure(
   if (options.checkSelfReferences !== false) {
     const selfRefIssues = findSelfReferences(files);
     allIssues.push(...selfRefIssues);
+  }
+
+  // DDL duplication detection
+  if (options.checkDdlDuplication !== false) {
+    const ddlIssues = checkDdlDuplication(files);
+    allIssues.push(...ddlIssues);
+  }
+
+  // File size checking
+  if (options.checkFileSizes !== false) {
+    const sizeIssues = checkFileSizes(files);
+    allIssues.push(...sizeIssues);
   }
 
   // Calculate stats
@@ -162,3 +180,5 @@ export { checkAllLinks, checkFileLinks } from './link-checker.js';
 export { checkAllLayerRules, checkFileLayerRules, generateLayerReport } from './layer-rules.js';
 export { validateFrontmatter, parseFrontmatter, FRONTMATTER_FIELDS, REQUIRED_FRONTMATTER, RECOMMENDED_FRONTMATTER } from './frontmatter.js';
 export { findOrphans, findSelfReferences, generateOrphanStats } from './orphan-detector.js';
+export { checkDdlDuplication, extractTableNames } from './ddl-checker.js';
+export { checkFileSizes, getLineLimit, FILE_SIZE_LIMITS } from './file-size-checker.js';

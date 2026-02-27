@@ -9,6 +9,8 @@ description: {{description}}
 
 {{description}}
 
+> **Content guidelines:** This file should contain DDL, constraints, indexes, RLS, and reference data only. Workflows, state machines, behavioral descriptions, and domain logic belong in domain files.
+
 ## Tables
 
 ### {{table_name}}
@@ -16,7 +18,7 @@ description: {{description}}
 | Column | Type | Constraints | Description |
 |--------|------|-------------|-------------|
 | id | uuid | PK | Primary identifier |
-| tenant_id | uuid | FK, NOT NULL | Tenant reference |
+| organization_id | uuid | FK, NOT NULL | Organization reference |
 | created_at | timestamp | NOT NULL | Creation timestamp |
 | updated_at | timestamp | NOT NULL | Last update timestamp |
 
@@ -29,11 +31,11 @@ description: {{description}}
 | Name | Columns | Type | Purpose |
 |------|---------|------|---------|
 | {{table_name}}_pkey | id | PRIMARY | Primary key |
-| {{table_name}}_tenant_id_idx | tenant_id | BTREE | Tenant lookup |
+| {{table_name}}_organization_id_idx | organization_id | BTREE | Organization lookup |
 
 ## Constraints
 
-- `tenant_id` must reference a valid tenant
+- `organization_id` must reference a valid organization
 - `created_at` cannot be modified after creation
 
 ## Usage
@@ -45,4 +47,4 @@ import { {{name}} } from 'your-org/database';
 
 ## Related Schemas
 
-- [related-schema](./related-schema.md) - Tenant ownership
+- [related-schema](./related-schema.md) - Organization ownership
