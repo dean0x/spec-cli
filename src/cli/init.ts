@@ -11,6 +11,7 @@ import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { installPlugin } from '../core/plugin.js';
 import type { PluginScope } from '../core/plugin.js';
+import { generateContext } from './context.js';
 
 const DEFAULT_CONFIG = `# spec Configuration
 # See https://github.com/dean0x/spec-cli for documentation
@@ -190,6 +191,10 @@ uses:
     console.log('\nScaffolding docs structure...');
     createDocsStructure(projectRoot);
   }
+
+  // Generate CLAUDE.md context
+  console.log('\nGenerating CLAUDE.md context...');
+  generateContext(projectRoot);
 
   console.log('\nspec initialized successfully!');
   console.log('\nNext steps:');
