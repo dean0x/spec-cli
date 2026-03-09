@@ -5,6 +5,21 @@
 import type { FeatureManifest, ValidationIssue } from './types.js';
 import type { DependencyGraph } from './graph.js';
 
+/** Shared mapping from manifest ownership types to their base directories */
+const TYPE_TO_DIR: Record<string, string> = {
+  schemas: 'docs/schemas',
+  domains: 'docs/domains',
+  patterns: 'docs/architecture/patterns',
+  decisions: 'docs/architecture/decisions',
+  diagrams: 'docs/diagrams',
+  infrastructure: 'docs/infrastructure',
+  security: 'docs/security',
+  operations: 'docs/operations',
+  api: 'docs/api',
+  products: 'docs/products',
+  features: 'docs/products',
+};
+
 /**
  * Parse YAML manifest content into FeatureManifest
  * Note: In production, use a proper YAML parser. This is a simplified parser.
@@ -16,7 +31,7 @@ export function parseManifest(content: string): FeatureManifest | null {
     uses: {},
   };
 
-  let currentSection: 'root' | 'owns' | 'uses' = 'root';
+  let currentSection: 'root' | 'owns' | 'uses' | 'referencedBy' = 'root';
   let currentKey: string | null = null;
 
   for (const line of lines) {
@@ -34,6 +49,14 @@ export function parseManifest(content: string): FeatureManifest | null {
     if (trimmed === 'uses:') {
       currentSection = 'uses';
       currentKey = null;
+      continue;
+    }
+    if (trimmed === 'referencedBy:') {
+      currentSection = 'referencedBy';
+      currentKey = null;
+      if (!manifest.referencedBy) {
+        manifest.referencedBy = [];
+      }
       continue;
     }
 
@@ -71,13 +94,18 @@ export function parseManifest(content: string): FeatureManifest | null {
           }
         }
       }
-    } else if (trimmed.startsWith('- ') && currentKey) {
-      // Array item
+    } else if (trimmed.startsWith('- ')) {
       const item = trimmed.slice(2).trim();
-      if (currentSection === 'owns') {
-        (manifest.owns as Record<string, string[]>)[currentKey]?.push(item);
-      } else {
-        (manifest.uses as Record<string, string[]>)[currentKey]?.push(item);
+      if (currentSection === 'referencedBy') {
+        // referencedBy items are flat list, no currentKey needed
+        manifest.referencedBy?.push(item);
+      } else if (currentKey) {
+        // Array item under owns/uses sub-key
+        if (currentSection === 'owns') {
+          (manifest.owns as Record<string, string[]>)[currentKey]?.push(item);
+        } else if (currentSection === 'uses') {
+          (manifest.uses as Record<string, string[]>)[currentKey]?.push(item);
+        }
       }
     }
   }
@@ -101,29 +129,9 @@ export function serializeManifest(manifest: FeatureManifest): string {
     lines.push(`description: ${manifest.description}`);
   }
 
-  // Owns section
-  const ownsEntries = Object.entries(manifest.owns).filter(
-    ([, v]) => Array.isArray(v) && v.length > 0
-  ) as Array<[string, string[]]>;
-  if (ownsEntries.length > 0) {
-    lines.push('owns:');
-    for (const [key, values] of ownsEntries) {
-      lines.push(`  ${key}: [${values.join(', ')}]`);
-    }
-  }
+  serializeSection(lines, 'owns', manifest.owns);
+  serializeSection(lines, 'uses', manifest.uses);
 
-  // Uses section
-  const usesEntries = Object.entries(manifest.uses).filter(
-    ([, v]) => Array.isArray(v) && v.length > 0
-  ) as Array<[string, string[]]>;
-  if (usesEntries.length > 0) {
-    lines.push('uses:');
-    for (const [key, values] of usesEntries) {
-      lines.push(`  ${key}: [${values.join(', ')}]`);
-    }
-  }
-
-  // Referenced by section
   if (manifest.referencedBy && manifest.referencedBy.length > 0) {
     lines.push('referencedBy:');
     for (const ref of manifest.referencedBy) {
@@ -132,6 +140,25 @@ export function serializeManifest(manifest: FeatureManifest): string {
   }
 
   return lines.join('\n');
+}
+
+/** Append a YAML section (owns/uses) with non-empty arrays as inline lists */
+function serializeSection(
+  lines: string[],
+  header: string,
+  section: Record<string, string[] | undefined>
+): void {
+  const entries = Object.entries(section).filter(
+    ([, v]) => Array.isArray(v) && v.length > 0
+  );
+  if (entries.length === 0) return;
+
+  lines.push(`${header}:`);
+  for (const [key, values] of entries) {
+    if (values) {
+      lines.push(`  ${key}: [${values.join(', ')}]`);
+    }
+  }
 }
 
 /**
@@ -143,28 +170,36 @@ export function validateManifestOwnership(
 ): ValidationIssue[] {
   const issues: ValidationIssue[] = [];
 
-  // Map component types to their base directories
-  const typeToDir: Record<string, string> = {
-    schemas: 'docs/schemas',
-    domains: 'docs/domains',
-    patterns: 'docs/architecture/patterns',
-    decisions: 'docs/architecture/decisions',
-    infrastructure: 'docs/infrastructure',
-    security: 'docs/security',
-    operations: 'docs/operations',
-    api: 'docs/api',
-    products: 'docs/products',
-  };
-
   const ownsEntries = Object.entries(manifest.owns) as Array<[string, string[] | undefined]>;
 
   for (const [type, components] of ownsEntries) {
-    if (!components || !Array.isArray(components)) continue;
+    if (!components) continue;
 
-    const baseDir = typeToDir[type];
+    const baseDir = TYPE_TO_DIR[type];
     if (!baseDir) continue;
 
     for (const component of components) {
+      if (type === 'features') {
+        const featureSuffix = `/features/${component}.md`;
+        let exists = false;
+        for (const f of existingFiles) {
+          if (f.startsWith('docs/products/') && f.endsWith(featureSuffix)) {
+            exists = true;
+            break;
+          }
+        }
+        if (!exists) {
+          issues.push({
+            severity: 'error',
+            code: 'MISSING_OWNED_COMPONENT',
+            message: `Manifest claims to own ${type}/${component} but no matching file found`,
+            file: `.manifests/features/${manifest.feature}.yaml`,
+            suggestion: `Create docs/products/<product>/features/${component}.md or remove from manifest`,
+          });
+        }
+        continue;
+      }
+
       // Check common file patterns
       const possiblePaths = [
         `${baseDir}/${component}.md`,
@@ -195,26 +230,12 @@ export function validateManifestOwnership(
 export function getOwnedFilePaths(manifest: FeatureManifest): string[] {
   const paths: string[] = [];
 
-  const typeToDir: Record<string, string> = {
-    schemas: 'docs/schemas',
-    domains: 'docs/domains',
-    patterns: 'docs/architecture/patterns',
-    decisions: 'docs/architecture/decisions',
-    diagrams: 'docs/diagrams',
-    infrastructure: 'docs/infrastructure',
-    security: 'docs/security',
-    operations: 'docs/operations',
-    api: 'docs/api',
-    products: 'docs/products',
-    features: 'docs/products',
-  };
-
   const ownsEntries = Object.entries(manifest.owns) as Array<[string, string[] | undefined]>;
 
   for (const [type, components] of ownsEntries) {
-    if (!components || !Array.isArray(components)) continue;
+    if (!components) continue;
 
-    const baseDir = typeToDir[type];
+    const baseDir = TYPE_TO_DIR[type];
     if (!baseDir) continue;
 
     for (const component of components) {
@@ -242,31 +263,46 @@ export function isFileOwnedByManifest(filePath: string, manifest: FeatureManifes
   const ownedPaths = getOwnedFilePaths(manifest);
 
   for (const pattern of ownedPaths) {
-    if (pattern.includes('**')) {
-      // Glob pattern matching (simplified)
-      const parts = pattern.split('**');
-      if (parts[0] && parts[1]) {
-        const prefix = parts[0];
-        const suffix = parts[1];
-        if (filePath.startsWith(prefix) && filePath.endsWith(suffix)) {
-          return true;
-        }
-      }
-    } else if (pattern.endsWith('/')) {
-      // Directory prefix match
-      if (filePath.startsWith(pattern)) {
-        return true;
-      }
-    } else if (!pattern.includes('/') || pattern === filePath) {
-      // Exact match or just component name
-      if (filePath === pattern || filePath.includes(`/${pattern.split('/').pop()}`)) {
-        return true;
-      }
-    } else if (filePath.startsWith(pattern.replace('.md', ''))) {
-      // Directory match for domains
-      return true;
-    }
+    if (matchesOwnedPattern(filePath, pattern)) return true;
   }
+
+  return false;
+}
+
+/**
+ * Match a file path against a single owned path pattern.
+ *
+ * Patterns take one of four forms (produced by getOwnedFilePaths):
+ *  - Glob:      docs/products/ ** /features/x.md  (feature ownership)
+ *  - Directory: docs/domains/billing               (domain directory)
+ *  - Exact:     docs/schemas/billing.md            (single file)
+ *  - Bare name: (no slashes) — substring match     (fallback)
+ */
+function matchesOwnedPattern(filePath: string, pattern: string): boolean {
+  // Glob: "docs/products/**/features/x.md"
+  if (pattern.includes('**')) {
+    const parts = pattern.split('**');
+    if (parts[0] && parts[1]) {
+      return filePath.startsWith(parts[0]) && filePath.endsWith(parts[1]);
+    }
+    return false;
+  }
+
+  // Exact file match
+  if (filePath === pattern) return true;
+
+  // Directory prefix: "docs/domains/billing" → matches "docs/domains/billing/invoices.md"
+  // Require a "/" after the pattern to prevent "billing" matching "billing-v2"
+  if (!pattern.endsWith('.md') && filePath.startsWith(pattern + '/')) return true;
+
+  // Domain directory via .md stripping: "docs/domains/billing/index.md" → directory prefix "docs/domains/billing/"
+  if (pattern.endsWith('/index.md')) {
+    const dirPrefix = pattern.slice(0, -'index.md'.length); // keeps trailing "/"
+    if (filePath.startsWith(dirPrefix)) return true;
+  }
+
+  // Bare component name (no slashes): match as path segment or filename stem
+  if (!pattern.includes('/') && (filePath.includes(`/${pattern}/`) || filePath.includes(`/${pattern}.`))) return true;
 
   return false;
 }
@@ -285,31 +321,25 @@ export function findReferencingFeatures(
   const referencingFeatures = new Set<string>();
   const ownedPaths = getOwnedFilePaths(manifest);
 
-  // For each file in the graph, check if it references our owned files
   for (const [filePath, node] of graph.nodes) {
-    // Skip our own files
     if (isFileOwnedByManifest(filePath, manifest)) continue;
 
-    // Check if this file links to any of our owned files
     for (const linkedTo of node.linksTo) {
-      const linkedToNormalized = linkedTo;
+      const linksToOwnedFile = ownedPaths.some(
+        (ownedPath) =>
+          linkedTo === ownedPath ||
+          linkedTo.includes(ownedPath.replace('.md', '')) ||
+          ownedPath.includes(linkedTo)
+      );
 
-      // Check if linkedTo matches any owned path
-      for (const ownedPath of ownedPaths) {
-        const matches =
-          linkedToNormalized === ownedPath ||
-          linkedToNormalized.includes(ownedPath.replace('.md', '')) ||
-          ownedPath.includes(linkedToNormalized);
+      if (!linksToOwnedFile) continue;
 
-        if (matches) {
-          // Find which feature owns this referencing file
-          for (const otherManifest of allManifests) {
-            if (otherManifest.feature === manifest.feature) continue;
-            if (isFileOwnedByManifest(filePath, otherManifest)) {
-              referencingFeatures.add(otherManifest.feature);
-              break;
-            }
-          }
+      // Find which feature owns the referencing file
+      for (const otherManifest of allManifests) {
+        if (otherManifest.feature === manifest.feature) continue;
+        if (isFileOwnedByManifest(filePath, otherManifest)) {
+          referencingFeatures.add(otherManifest.feature);
+          break;
         }
       }
     }

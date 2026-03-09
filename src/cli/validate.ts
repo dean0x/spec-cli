@@ -8,7 +8,7 @@
 
 import { existsSync } from 'node:fs';
 import { resolveSpecCliPaths } from '../core/paths.js';
-import { collectMarkdownFiles } from '../core/files.js';
+import { collectMarkdownFiles, collectManifestFiles } from '../core/files.js';
 import {
   validateStructure,
   formatValidationResult,
@@ -27,16 +27,18 @@ Usage:
   spec validate [options]
 
 Options:
-  --json        Output results as JSON
-  --strict      Fail on warnings too (not just errors)
-  --semantic    Run semantic validation (advisory, never affects exit code)
-  --help, -h    Show this help message
+  --json           Output results as JSON
+  --strict         Fail on warnings too (not just errors)
+  --semantic       Run semantic validation (advisory, never affects exit code)
+  --no-manifests   Skip manifest validation
+  --help, -h       Show this help message
 
 Examples:
   spec validate
   spec validate --json
   spec validate --strict
   spec validate --semantic
+  spec validate --no-manifests
 
 Exit codes:
   0 - Validation passed
@@ -47,6 +49,7 @@ interface ValidateOptions {
   json: boolean;
   strict: boolean;
   semantic: boolean;
+  manifests: boolean;
   help: boolean;
 }
 
@@ -55,10 +58,10 @@ function parseArgs(args: string[]): ValidateOptions {
     json: args.includes('--json'),
     strict: args.includes('--strict'),
     semantic: args.includes('--semantic'),
+    manifests: !args.includes('--no-manifests'),
     help: args.includes('--help') || args.includes('-h'),
   };
 }
-
 
 export async function runValidation(args: string[]): Promise<void> {
   const options = parseArgs(args);
@@ -75,7 +78,7 @@ export async function runValidation(args: string[]): Promise<void> {
     process.exit(1);
   }
 
-  const { docsRoot, projectRoot } = pathsResult.value;
+  const { docsRoot, projectRoot, manifestDir } = pathsResult.value;
 
   if (!existsSync(docsRoot)) {
     console.error(`Docs directory not found: ${docsRoot}`);
@@ -92,12 +95,21 @@ export async function runValidation(args: string[]): Promise<void> {
   // Collect all markdown files
   const files = collectMarkdownFiles(docsRoot, projectRoot);
 
+  // Collect manifest files if enabled
+  let manifestFiles: Map<string, string> | undefined;
+  if (options.manifests) {
+    manifestFiles = collectManifestFiles(manifestDir, projectRoot);
+  }
+
   if (!options.json) {
     console.log(`Found ${files.size} markdown files`);
+    if (manifestFiles && manifestFiles.size > 0) {
+      console.log(`Found ${manifestFiles.size} manifest files`);
+    }
   }
 
   // Run structural validation
-  const result = validateStructure(files);
+  const result = validateStructure(files, undefined, manifestFiles);
 
   // Format and print structural results
   if (options.json) {
