@@ -1,7 +1,7 @@
 {
   "name": "spec-core",
   "description": "Composable specification framework for managing layered technical documentation",
-  "author": { "name": "dean0x" },
+  "author": { "name": "Dean0x" },
   "version": "0.1.0",
   "repository": "https://github.com/dean0x/spec-cli",
   "license": "MIT",

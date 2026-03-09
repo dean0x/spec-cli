@@ -2,7 +2,7 @@
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "spec-cli",
   "description": "Composable specification framework for layered technical documentation",
-  "owner": { "name": "dean0x" },
+  "owner": { "name": "Dean0x" },
   "plugins": [
     {
       "name": "spec-core",
