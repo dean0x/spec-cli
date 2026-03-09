@@ -43,3 +43,37 @@ export function collectMarkdownFiles(dir: string, base: string): Map<string, str
   walk(dir);
   return files;
 }
+
+/**
+ * Collect all YAML manifest files from a flat directory.
+ *
+ * Returns a Map of relativePath → YAML content.
+ * Returns empty Map if the directory doesn't exist (graceful degradation).
+ * Only reads .yaml and .yml files; skips subdirectories.
+ */
+export function collectManifestFiles(
+  manifestDir: string,
+  projectRoot: string
+): Map<string, string> {
+  const files = new Map<string, string>();
+
+  if (!existsSync(manifestDir)) {
+    return files;
+  }
+
+  const entries = readdirSync(manifestDir);
+
+  for (const entry of entries) {
+    if (!entry.endsWith('.yaml') && !entry.endsWith('.yml')) continue;
+
+    const fullPath = join(manifestDir, entry);
+    const stat = statSync(fullPath);
+    if (!stat.isFile()) continue;
+
+    const relativePath = relative(projectRoot, fullPath);
+    const content = readFileSync(fullPath, 'utf-8');
+    files.set(relativePath, content);
+  }
+
+  return files;
+}

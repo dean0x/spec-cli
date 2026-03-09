@@ -20,7 +20,7 @@ Use `/spec add` to create new components from templates:
 
 ```
 /spec add schema notifications --domain=events
-/spec add feature user-alerts --product=web --priority=P1
+/spec add feature order-tracking --product=dashboard --priority=P1
 /spec add decision use-redis-for-caching
 ```
 
@@ -62,7 +62,7 @@ Use `/spec add` to create new components from templates:
 ```yaml
 ---
 title: Schema Name
-domain: billing|auth|properties|...
+domain: inventory|users|orders|...
 description: Brief description
 ---
 ```
@@ -181,10 +181,10 @@ See [error handling](./api.md#error-responses)
 ### Reference Schemas, Don't Duplicate
 ```markdown
 <!-- Good -->
-Uses the [billing schema](../../schemas/billing.md).
+Uses the [inventory schema](../../schemas/inventory.md).
 
 <!-- Bad: duplicating schema content -->
-The billing table has columns: id, tenant_id, amount...
+The inventory table has columns: id, organization_id, quantity...
 ```
 
 ## Feature Manifests
@@ -192,16 +192,16 @@ The billing table has columns: id, tenant_id, amount...
 Located in `.manifests/features/<name>.yaml`:
 
 ```yaml
-feature: billing
+feature: inventory
 status: active
-description: Subscription billing and payment processing
+description: Inventory tracking and warehouse management
 owns:
-  schemas: [billing]
-  domains: [billing]
-  diagrams: [billing-flow]
+  schemas: [inventory]
+  domains: [inventory]
+  diagrams: [inventory-flow]
 uses:
-  schemas: [tenants, users]
-  patterns: [result-types, tenant-context]
+  schemas: [users, orders]
+  patterns: [result-types, organization-context]
 ```
 
 ### Owns vs Uses
@@ -213,7 +213,7 @@ uses:
 When creating components with `/spec add`, use `--feature=<name>` to automatically update the manifest:
 
 ```
-/spec add schema invoices --domain=billing --feature=billing
+/spec add schema warehouses --domain=inventory --feature=inventory
 ```
 
 ## Commands Reference
@@ -227,29 +227,54 @@ When creating components with `/spec add`, use `--feature=<name>` to automatical
 
 ## Validation
 
-Run `/spec validate` to check:
-- All links resolve
-- No layer violations
-- Required frontmatter present
-- No orphan documents
+Run `/spec validate` to check structural integrity.
 
-Fix issues before committing.
+### Structural Checks (always run)
 
-### Semantic Validation
+| Check | Codes | Description |
+|-------|-------|-------------|
+| Link validation | `BROKEN_LINK` | All markdown links resolve to existing files |
+| Layer enforcement | `LAYER_VIOLATION` | No upward layer references |
+| Frontmatter | `MISSING_FRONTMATTER`, `MISSING_REQUIRED_FIELD`, `MISSING_RECOMMENDED_FIELD`, `INVALID_STATUS` | YAML frontmatter matches component type |
+| Orphan detection | `ORPHAN_DOCUMENT` | All documents referenced from at least one index |
+| Self-reference | `SELF_REFERENCE` | Documents don't link to themselves |
+| DDL duplication | `DUPLICATE_DDL` | CREATE TABLE only in canonical schema files |
+| File size | `FILE_SIZE_EXCEEDED` | Files within line limits for their type |
 
-Add `--semantic` for LLM-powered content analysis:
+Fix errors before committing. Warnings should be addressed but don't block validity.
+
+### Deterministic Semantic Checks (`--semantic`)
 
 ```
 /spec validate --semantic
 ```
 
-Checks for:
-- **Contradictions** - Conflicting claims between specs
-- **Completeness** - Missing required sections
-- **Terminology** - Inconsistent naming
-- **Staleness** - Outdated references
+| Check | Codes | Description |
+|-------|-------|-------------|
+| Terminology | `TERMINOLOGY_INCONSISTENCY` | Terms match glossary in spec.semantic.json |
+| Staleness | `UNDATED_ESTIMATE` | Time estimates have date anchors |
+| Completeness | `MISSING_REQUIRED_SECTION` | Expected sections present |
+| Cross-references | `SCOPE_NOT_IN_TYPE`, `ERROR_CODE_OVERLOADED`, `STATE_DESCRIPTION_CONFLICT` | Consistent cross-file references |
+| Dependency health | `UNHEALTHY_DEPENDENCY`, `MISSING_DEPENDENCY`, `CIRCULAR_DEPENDENCY` | Frontmatter dependencies valid |
+| Domain coupling | `DOMAIN_COUPLING` | Domain terms stay within boundaries |
+| Placeholders | `PLACEHOLDER_MARKER` | No TBD/TODO/FIXME/HACK markers |
 
-Semantic findings are advisory only (warnings, not errors).
+Semantic findings are advisory only (never affect exit code).
+
+### LLM Semantic Checks (`--deep`)
+
+```
+/spec validate --deep
+```
+
+| Check | Description |
+|-------|-------------|
+| Contradictions | Conflicting claims about the same concept across files |
+| Coherence | Logical gaps, missing transitions, undefined states |
+| Implicit dependencies | Cross-domain references without explicit links |
+| Schema purity | Behavioral content in schema files |
+
+LLM findings are advisory and may vary between runs.
 
 ## Dependency Analysis
 
@@ -257,27 +282,27 @@ Use `/spec graph` to understand relationships between specs:
 
 ### Show What Depends on a File
 ```
-/spec graph docs/schemas/billing.md
+/spec graph docs/schemas/inventory.md
 ```
 
 ### Impact Analysis (Before Removal)
 ```
-/spec graph --impact docs/schemas/billing.md
+/spec graph --impact docs/schemas/inventory.md
 ```
 
 Shows what would break if this file were removed.
 
 ### Show Dependencies of a File
 ```
-/spec graph --dependencies docs/products/web/features/billing.md
+/spec graph --dependencies docs/products/dashboard/features/order-tracking.md
 ```
 
 ### Feature Dependencies
 ```
-/spec graph --feature billing
+/spec graph --feature inventory
 ```
 
-Shows all dependencies for the billing feature.
+Shows all dependencies for the inventory feature.
 
 ### Find Layer Violations
 ```
@@ -291,7 +316,7 @@ Shows all dependencies for the billing feature.
 
 ### Generate Mermaid Diagram
 ```
-/spec graph --mermaid docs/schemas/billing.md
+/spec graph --mermaid docs/schemas/inventory.md
 ```
 
 ### Graph Statistics
@@ -305,20 +330,20 @@ Use `/spec remove` to safely remove features and their owned components.
 
 ### Preview Removal
 ```
-/spec remove billing --dry-run
+/spec remove inventory --dry-run
 ```
 
 Shows what would be deleted and what references would be marked.
 
 ### Execute Removal
 ```
-/spec remove billing
+/spec remove inventory
 ```
 
 This will:
 1. Show impact analysis
 2. Ask for confirmation
-3. Mark breaking references with `[REMOVED: billing]`
+3. Mark breaking references with `[REMOVED: inventory]`
 4. Delete owned files
 5. Remove the feature manifest
 
@@ -327,14 +352,14 @@ This will:
 When references break, they're marked:
 ```markdown
 <!-- Before -->
-See the [billing schema](../schemas/billing.md).
+See the [inventory schema](../schemas/inventory.md).
 
 <!-- After -->
-See the [REMOVED: billing] <!-- was: [billing schema](../schemas/billing.md) -->.
+See the [REMOVED: inventory] <!-- was: [inventory schema](../schemas/inventory.md) -->.
 ```
 
 ### After Removal
-1. Search for `[REMOVED: billing]` markers
+1. Search for `[REMOVED: inventory]` markers
 2. Update or remove those references
 3. Run `/spec validate` to verify
 

@@ -11,11 +11,9 @@ Validate the structural and semantic integrity of specification documents.
 
 | Option | Description |
 |--------|-------------|
-| `--no-links` | Skip link validation |
-| `--no-layers` | Skip layer rule enforcement |
-| `--no-frontmatter` | Skip frontmatter validation |
-| `--no-orphans` | Skip orphan detection |
-| `--no-semantic` | Skip semantic validation |
+| `--semantic` | Include deterministic semantic checks (terminology, staleness, completeness, etc.) |
+| `--deep` | Run LLM-powered semantic analysis (contradictions, coherence, implicit deps) |
+| `--strict` | Fail on warnings (not just errors) |
 | `--json` | Output results as JSON |
 
 ## Execution
@@ -23,26 +21,28 @@ Validate the structural and semantic integrity of specification documents.
 You MUST follow these steps exactly:
 
 1. **Parse options** from the user's input: `$ARGUMENTS`
-   - Identify any `--no-*` flags (skip checks for those categories)
-   - Check for `--json` flag
+   - Identify flags: `--semantic`, `--deep`, `--strict`, `--json`
 
-2. **Spawn BOTH agents in parallel** via the Task tool:
+2. **Build CLI flags** to pass through to the Structural Validator:
+   - If `--semantic` or `--deep` is present, pass `--semantic` to the CLI
+   - If `--strict` is present, pass `--strict` to the CLI
+   - If `--json` is present, pass `--json` to the CLI
+   - Note: `--deep` is NOT a CLI flag — it controls whether the LLM agent is spawned
 
-   a. **Structural Validator** agent:
-      - `subagent_type`: `Structural Validator`
-      - In the prompt, tell it:
-        - The working directory (current project root with a `docs/` folder)
-        - Which checks to skip based on `--no-*` flags
-        - Whether to output JSON or text
-      - The agent will scan `docs/**/*.md`, run all enabled checks (links, layers, frontmatter, orphans), and return results
+3. **Always spawn the Structural Validator agent** via the Task tool:
+   - `subagent_type`: `Structural Validator`
+   - In the prompt, tell it:
+     - The working directory (current project root with a `docs/` folder)
+     - The CLI flags to pass through (`--semantic`, `--strict`, `--json`)
+   - The agent will run the spec-cli CLI and return structured results
 
-   b. **Semantic Validator** agent (unless `--no-semantic` was specified):
-      - `subagent_type`: `Semantic Validator`
-      - In the prompt, tell it the working directory
-      - It will run terminology, staleness, completeness, and cross-reference checks
-      - Its results are advisory only — never blocking
+4. **If `--deep` was specified**, also spawn the **Semantic Validator** agent in parallel:
+   - `subagent_type`: `Semantic Validator`
+   - In the prompt, tell it the working directory
+   - It performs LLM comprehension checks: contradictions, coherence gaps, implicit dependencies, schema purity
+   - Its results are advisory only — never blocking
 
-3. **Report combined results** to the user:
-   - Structural results first (errors and warnings)
-   - Semantic results second (advisory warnings)
+5. **Report combined results** to the user:
+   - CLI results first (errors, warnings, and semantic advisories if `--semantic`)
+   - LLM findings second (if `--deep`)
    - If `--json`, combine both into a single JSON object: `{ structural: {...}, semantic: {...} }`

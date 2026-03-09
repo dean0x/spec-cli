@@ -64,11 +64,11 @@ Calculate where the new file should be created.
 For type="schema", name="notifications":
   → docs/schemas/notifications.md
 
-For type="feature", name="alerts", product="web":
-  → docs/products/web/features/alerts.md
+For type="feature", name="order-tracking", product="dashboard":
+  → docs/products/dashboard/features/order-tracking.md
 
-For type="domain-topic", name="scanning", domain="properties":
-  → docs/domains/properties/scanning.md
+For type="domain-topic", name="fulfillment", domain="orders":
+  → docs/domains/orders/fulfillment.md
 ```
 
 ### Step 3: Load Template
@@ -144,9 +144,9 @@ For docs/schemas/notifications.md:
   Update: docs/schemas/index.md
   Add: - [Notifications](./notifications.md)
 
-For docs/domains/properties/scanning.md:
-  Update: docs/domains/properties/index.md
-  Add: - [Scanning](./scanning.md)
+For docs/domains/orders/fulfillment.md:
+  Update: docs/domains/orders/index.md
+  Add: - [Fulfillment](./fulfillment.md)
 ```
 
 ### Step 8: Update Feature Manifest (Optional)
@@ -179,10 +179,10 @@ Suggestion: Provide domain with --domain=<value> or interactively
 
 ### File Already Exists
 ```
-Warning: docs/schemas/billing.md already exists
+Warning: docs/schemas/inventory.md already exists
 Options:
   1. Overwrite
-  2. Create with suffix (billing-2.md)
+  2. Create with suffix (inventory-2.md)
   3. Cancel
 ```
 
@@ -235,8 +235,8 @@ This agent is invoked by the `/spec add` command:
 
 ```
 /spec add schema notifications --domain=events
-/spec add feature user-alerts --product=web --priority=P1
-/spec add domain-topic scanning --domain=properties
+/spec add feature order-tracking --product=dashboard --priority=P1
+/spec add domain-topic fulfillment --domain=orders
 ```
 
 ## Integration with Manifests
@@ -252,11 +252,11 @@ When adding components that should be tracked by a feature:
 ```yaml
 # Before
 owns:
-  schemas: [billing]
+  schemas: [inventory]
 
-# After adding 'invoices' schema owned by billing feature
+# After adding 'warehouses' schema owned by inventory feature
 owns:
-  schemas: [billing, invoices]
+  schemas: [inventory, warehouses]
 ```
 
 ## Validation
@@ -269,12 +269,13 @@ Before creating any file, validate:
 4. **No Duplicates** - File doesn't already exist
 5. **Layer Rules** - Any links in template are valid for layer
 
-## Framework Rules
+## Framework Compliance
 
-Generated content must comply with these rules from FRAMEWORK.md:
-
-- **Rule 1 (No Duplication):** Never duplicate content. Always link to the canonical source. If information exists elsewhere, reference it with a markdown link.
-- **Rule 3 (File Size Limits):** schema: 400 lines, pattern: 300 lines, domain-topic: 500 lines, feature: 400 lines. All other types: 500 lines max.
-- **Rule 7 (No DDL in ADRs):** Decision records must not contain CREATE TABLE or other DDL. Link to canonical schema files instead.
-- **Rule 8 (Schema Purity):** Schema files contain structure only — DDL, constraints, indexes, RLS, and reference data. Workflows, state machines, behavioral descriptions, and domain logic belong in domain files.
-- **Rule 9 (No Placeholders):** Do not leave TBD, TODO, FIXME, HACK, or PLACEHOLDER markers in generated content. Use honest stubs with "Under Review" banners if content is not yet decided.
+Before generating content, check if the project defines framework rules:
+1. Look for `docs/FRAMEWORK.md` or `FRAMEWORK.md` in the project root
+2. If found, read it and apply its rules to generated content
+3. If not found, apply universal defaults:
+   - Never duplicate content — link to canonical sources
+   - No placeholder markers (TBD, TODO, FIXME) in generated content
+   - Schema files contain structure only (DDL, constraints, indexes)
+   - Respect file size conventions (aim for focused, single-topic files)

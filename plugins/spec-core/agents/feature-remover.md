@@ -24,14 +24,14 @@ This agent handles the complete feature removal workflow:
 Read the manifest from `.manifests/features/{name}.yaml`:
 
 ```yaml
-feature: billing
+feature: inventory
 status: active
 owns:
-  schemas: [billing]
-  domains: [billing]
-  diagrams: [billing-flow]
+  schemas: [inventory]
+  domains: [inventory]
+  diagrams: [inventory-flow]
 uses:
-  schemas: [tenants]
+  schemas: [users]
   patterns: [result-types]
 ```
 
@@ -44,16 +44,16 @@ uses:
 Map manifest ownership to actual file paths:
 
 ```
-owns.schemas: [billing]
-  → docs/schemas/billing.md
+owns.schemas: [inventory]
+  → docs/schemas/inventory.md
 
-owns.domains: [billing]
-  → docs/domains/billing/index.md
-  → docs/domains/billing/subscriptions.md
-  → docs/domains/billing/invoices.md
+owns.domains: [inventory]
+  → docs/domains/inventory/index.md
+  → docs/domains/inventory/stock-levels.md
+  → docs/domains/inventory/warehouses.md
 
-owns.diagrams: [billing-flow]
-  → docs/diagrams/billing-flow.md
+owns.diagrams: [inventory-flow]
+  → docs/diagrams/inventory-flow.md
 ```
 
 ### Step 3: Build Dependency Graph
@@ -67,32 +67,32 @@ Use dependency-analyzer to build the full graph, then extract:
 ### Step 4: Generate Removal Plan
 
 ```
-Removal Plan: billing
+Removal Plan: inventory
 ========================================
 
 Files to delete (5):
-  - docs/schemas/billing.md
-  - docs/domains/billing/index.md
-  - docs/domains/billing/subscriptions.md
-  - docs/domains/billing/invoices.md
-  - docs/diagrams/billing-flow.md
+  - docs/schemas/inventory.md
+  - docs/domains/inventory/index.md
+  - docs/domains/inventory/stock-levels.md
+  - docs/domains/inventory/warehouses.md
+  - docs/diagrams/inventory-flow.md
 
 Breaking references to mark (3):
-  - docs/products/web/features/billing.md:12
-    Link: [billing schema](../../schemas/billing.md)
-    → [REMOVED: billing]
+  - docs/products/dashboard/features/order-tracking.md:12
+    Link: [inventory schema](../../schemas/inventory.md)
+    → [REMOVED: inventory]
 
-  - docs/domains/properties/pricing.md:45
-    Link: [subscriptions](../billing/subscriptions.md)
-    → [REMOVED: billing]
+  - docs/domains/orders/pricing.md:45
+    Link: [stock-levels](../inventory/stock-levels.md)
+    → [REMOVED: inventory]
 
   - docs/overview/architecture.md:78
-    Link: [billing flow](../diagrams/billing-flow.md)
-    → [REMOVED: billing]
+    Link: [inventory flow](../diagrams/inventory-flow.md)
+    → [REMOVED: inventory]
 
 Dependent features affected (2):
-  - web (docs/products/web/features/billing.md)
-  - properties (docs/domains/properties/pricing.md)
+  - dashboard (docs/products/dashboard/features/order-tracking.md)
+  - orders (docs/domains/orders/pricing.md)
 ```
 
 ### Step 5: User Confirmation
@@ -102,7 +102,7 @@ Present plan and ask for confirmation:
 ```
 This will:
   ✗ Delete 5 files
-  ⚠ Mark 3 references as [REMOVED: billing]
+  ⚠ Mark 3 references as [REMOVED: inventory]
   ⚠ Affect 2 other features
 
 Proceed with removal? [y/N]
@@ -126,7 +126,7 @@ Execute in order:
    - Remove empty directories
 
 3. **Update/delete manifest**
-   - Delete `.manifests/features/billing.yaml`
+   - Delete `.manifests/features/inventory.yaml`
 
 4. **Update index files**
    - Remove links to deleted files from index.md files
@@ -134,26 +134,26 @@ Execute in order:
 ### Step 7: Generate Report
 
 ```
-Removal Complete: billing
+Removal Complete: inventory
 ========================================
 
 Deleted (5 files):
-  ✓ docs/schemas/billing.md
-  ✓ docs/domains/billing/index.md
-  ✓ docs/domains/billing/subscriptions.md
-  ✓ docs/domains/billing/invoices.md
-  ✓ docs/diagrams/billing-flow.md
+  ✓ docs/schemas/inventory.md
+  ✓ docs/domains/inventory/index.md
+  ✓ docs/domains/inventory/stock-levels.md
+  ✓ docs/domains/inventory/warehouses.md
+  ✓ docs/diagrams/inventory-flow.md
 
 Updated (3 files with markers):
-  ✓ docs/products/web/features/billing.md
-  ✓ docs/domains/properties/pricing.md
+  ✓ docs/products/dashboard/features/order-tracking.md
+  ✓ docs/domains/orders/pricing.md
   ✓ docs/overview/architecture.md
 
 Removed manifest:
-  ✓ .manifests/features/billing.yaml
+  ✓ .manifests/features/inventory.yaml
 
 Next steps:
-  1. Review files with [REMOVED: billing] markers
+  1. Review files with [REMOVED: inventory] markers
   2. Decide whether to update or remove those references
   3. Run /spec validate to check for remaining issues
 ```
@@ -164,12 +164,12 @@ When a link target is removed, the link is replaced with a marker:
 
 **Before:**
 ```markdown
-See the [billing schema](../schemas/billing.md) for table definitions.
+See the [inventory schema](../schemas/inventory.md) for table definitions.
 ```
 
 **After:**
 ```markdown
-See the [REMOVED: billing] <!-- was: [billing schema](../schemas/billing.md) --> for table definitions.
+See the [REMOVED: inventory] <!-- was: [inventory schema](../schemas/inventory.md) --> for table definitions.
 ```
 
 This preserves:
@@ -182,22 +182,22 @@ This preserves:
 ### Manifest Not Found
 
 ```
-Error: No manifest found for feature 'billing'
+Error: No manifest found for feature 'inventory'
 
 Available features:
-  - auth
-  - properties
-  - rules
+  - users
+  - orders
+  - shipping
 ```
 
 ### No Owned Files
 
 ```
-Warning: Feature 'billing' owns no files in the codebase.
+Warning: Feature 'inventory' owns no files in the codebase.
 
 The manifest lists:
-  schemas: [billing]
-  domains: [billing]
+  schemas: [inventory]
+  domains: [inventory]
 
 But no matching files were found. Either:
   1. Files have already been deleted
@@ -207,10 +207,10 @@ But no matching files were found. Either:
 ### Circular Dependencies
 
 ```
-Warning: Removing 'billing' would create circular removal
+Warning: Removing 'inventory' would create circular removal
 
-Feature 'billing' is referenced by 'payments'
-Feature 'payments' is owned by 'billing'
+Feature 'inventory' is referenced by 'shipping'
+Feature 'shipping' is owned by 'inventory'
 
 This removal may leave the codebase in an inconsistent state.
 ```
@@ -218,12 +218,12 @@ This removal may leave the codebase in an inconsistent state.
 ### Write Errors
 
 ```
-Error: Failed to update docs/products/web/features/billing.md
+Error: Failed to update docs/products/dashboard/features/order-tracking.md
   Reason: Permission denied
 
 Removal partially completed. Manual cleanup required:
-  ✓ Deleted: docs/schemas/billing.md
-  ✗ Failed to update: docs/products/web/features/billing.md
+  ✓ Deleted: docs/schemas/inventory.md
+  ✗ Failed to update: docs/products/dashboard/features/order-tracking.md
 ```
 
 ## Options
@@ -257,16 +257,16 @@ Recommended workflow:
 
 ```bash
 # 1. Commit current state
-git add -A && git commit -m "Before removing billing feature"
+git add -A && git commit -m "Before removing inventory feature"
 
 # 2. Run removal
-/spec remove billing
+/spec remove inventory
 
 # 3. Review changes
 git diff
 
 # 4. Commit removal
-git add -A && git commit -m "Remove billing feature"
+git add -A && git commit -m "Remove inventory feature"
 ```
 
 The agent should remind users to commit before removal.

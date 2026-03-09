@@ -73,12 +73,12 @@ Perform requested analysis:
 #### Forward Impact (what depends on this?)
 
 ```
-Input: docs/schemas/billing.md
+Input: docs/schemas/inventory.md
 
 Direct dependents:
-├── docs/domains/billing/index.md
-├── docs/domains/billing/subscriptions.md
-└── docs/products/web/features/billing.md
+├── docs/domains/inventory/index.md
+├── docs/domains/inventory/stock-levels.md
+└── docs/products/dashboard/features/order-tracking.md
 
 Transitive dependents:
 ├── docs/products/api/index.md
@@ -88,11 +88,11 @@ Transitive dependents:
 #### Backward Dependencies (what does this depend on?)
 
 ```
-Input: docs/products/web/features/billing.md
+Input: docs/products/dashboard/features/order-tracking.md
 
 Direct dependencies:
-├── docs/schemas/billing.md
-├── docs/schemas/tenants.md
+├── docs/schemas/inventory.md
+├── docs/schemas/users.md
 └── docs/architecture/patterns/result-types.md
 
 Transitive dependencies:
@@ -104,8 +104,8 @@ Transitive dependencies:
 ```
 Found 2 layer violations:
 
-docs/domains/billing/index.md:15
-  → docs/products/web/features/billing.md
+docs/domains/inventory/index.md:15
+  → docs/products/dashboard/features/order-tracking.md
   Error: domain layer cannot reference product layer
 
 docs/infrastructure/redis.md:42
@@ -118,10 +118,10 @@ docs/infrastructure/redis.md:42
 ### Text Tree
 
 ```
-docs/schemas/billing.md [Schema]
-├── docs/domains/billing/index.md [Domain]
-│   ├── docs/products/web/features/billing.md [Feature]
-│   └── docs/products/api/billing.md [API]
+docs/schemas/inventory.md [Schema]
+├── docs/domains/inventory/index.md [Domain]
+│   ├── docs/products/dashboard/features/order-tracking.md [Feature]
+│   └── docs/products/api/index.md [API]
 └── docs/architecture/decisions/adr-005.md [Decision]
 ```
 
@@ -129,26 +129,26 @@ docs/schemas/billing.md [Schema]
 
 ```mermaid
 graph TD
-  billing_schema["billing.md"]
-  billing_domain["index.md"]
-  billing_feature["billing.md"]
+  inventory_schema["inventory.md"]
+  inventory_domain["index.md"]
+  order_tracking["order-tracking.md"]
 
-  billing_domain --> billing_schema
-  billing_feature --> billing_domain
-  billing_feature --> billing_schema
+  inventory_domain --> inventory_schema
+  order_tracking --> inventory_domain
+  order_tracking --> inventory_schema
 
-  style billing_schema fill:#e1f5fe
-  style billing_domain fill:#fff3e0
-  style billing_feature fill:#fce4ec
+  style inventory_schema fill:#e1f5fe
+  style inventory_domain fill:#fff3e0
+  style order_tracking fill:#fce4ec
 ```
 
 ### JSON Report
 
 ```json
 {
-  "target": "docs/schemas/billing.md",
-  "directDependents": ["docs/domains/billing/index.md"],
-  "transitiveDependents": ["docs/products/web/features/billing.md"],
+  "target": "docs/schemas/inventory.md",
+  "directDependents": ["docs/domains/inventory/index.md"],
+  "transitiveDependents": ["docs/products/dashboard/features/order-tracking.md"],
   "directDependencies": [],
   "transitiveDependencies": [],
   "brokenReferences": []
@@ -160,15 +160,15 @@ graph TD
 ### Analyze Single File
 
 ```
-/spec graph docs/schemas/billing.md
+/spec graph docs/schemas/inventory.md
 ```
 
-Output: Show what depends on billing schema
+Output: Show what depends on inventory schema
 
 ### Impact Analysis
 
 ```
-/spec graph --impact docs/schemas/billing.md
+/spec graph --impact docs/schemas/inventory.md
 ```
 
 Output: Full impact report if this file were removed
@@ -176,10 +176,10 @@ Output: Full impact report if this file were removed
 ### Feature Dependencies
 
 ```
-/spec graph --feature billing
+/spec graph --feature inventory
 ```
 
-Output: All dependencies for files owned by billing feature
+Output: All dependencies for files owned by inventory feature
 
 ### Layer Violations
 
@@ -192,7 +192,7 @@ Output: All layer rule violations in the codebase
 ### Export Diagram
 
 ```
-/spec graph --mermaid docs/schemas/billing.md
+/spec graph --mermaid docs/schemas/inventory.md
 ```
 
 Output: Mermaid diagram of dependencies
@@ -229,17 +229,17 @@ Files by layer:
 After building the graph, update manifest `referencedBy` fields:
 
 ```yaml
-# .manifests/features/billing.yaml
-feature: billing
+# .manifests/features/inventory.yaml
+feature: inventory
 owns:
-  schemas: [billing]
-  domains: [billing]
+  schemas: [inventory]
+  domains: [inventory]
 uses:
-  schemas: [tenants]
+  schemas: [users]
   patterns: [result-types]
 referencedBy:  # Auto-generated
-  - auth
-  - properties
+  - users
+  - orders
 ```
 
 ## Error Handling
@@ -248,9 +248,9 @@ referencedBy:  # Auto-generated
 
 ```
 Warning: Link target not found
-  File: docs/domains/billing/index.md:25
-  Link: [subscriptions](./subscriptions.md)
-  Target: docs/domains/billing/subscriptions.md
+  File: docs/domains/inventory/index.md:25
+  Link: [stock-levels](./stock-levels.md)
+  Target: docs/domains/inventory/stock-levels.md
 ```
 
 ### Circular Dependencies
@@ -265,5 +265,5 @@ Warning: Circular dependency detected
 For repos with many files, limit output:
 
 ```
-/spec graph --max-depth=2 docs/schemas/billing.md
+/spec graph --max-depth=2 docs/schemas/inventory.md
 ```

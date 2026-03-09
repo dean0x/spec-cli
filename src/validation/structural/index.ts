@@ -16,6 +16,7 @@ import { validateFrontmatter } from './frontmatter.js';
 import { findOrphans, findSelfReferences } from './orphan-detector.js';
 import { checkDdlDuplication } from './ddl-checker.js';
 import { checkFileSizes } from './file-size-checker.js';
+import { checkManifests } from './manifest-checker.js';
 
 export interface ValidationOptions {
   checkLinks?: boolean;
@@ -25,6 +26,7 @@ export interface ValidationOptions {
   checkSelfReferences?: boolean;
   checkDdlDuplication?: boolean;
   checkFileSizes?: boolean;
+  checkManifests?: boolean;
 }
 
 const DEFAULT_OPTIONS: ValidationOptions = {
@@ -35,6 +37,7 @@ const DEFAULT_OPTIONS: ValidationOptions = {
   checkSelfReferences: true,
   checkDdlDuplication: true,
   checkFileSizes: true,
+  checkManifests: true,
 };
 
 /**
@@ -42,7 +45,8 @@ const DEFAULT_OPTIONS: ValidationOptions = {
  */
 export function validateStructure(
   files: Map<string, string>,
-  options: ValidationOptions = DEFAULT_OPTIONS
+  options: ValidationOptions = DEFAULT_OPTIONS,
+  manifestFiles?: Map<string, string>
 ): ValidationResult {
   const allIssues: ValidationIssue[] = [];
   const existingFiles = new Set(files.keys());
@@ -94,6 +98,12 @@ export function validateStructure(
   if (options.checkFileSizes !== false) {
     const sizeIssues = checkFileSizes(files);
     allIssues.push(...sizeIssues);
+  }
+
+  // Manifest validation
+  if (options.checkManifests !== false && manifestFiles && manifestFiles.size > 0) {
+    const manifestIssues = checkManifests(manifestFiles, existingFiles);
+    allIssues.push(...manifestIssues);
   }
 
   // Calculate stats
@@ -182,3 +192,4 @@ export { validateFrontmatter, parseFrontmatter, FRONTMATTER_FIELDS, REQUIRED_FRO
 export { findOrphans, findSelfReferences, generateOrphanStats } from './orphan-detector.js';
 export { checkDdlDuplication, extractTableNames } from './ddl-checker.js';
 export { checkFileSizes, getLineLimit, FILE_SIZE_LIMITS } from './file-size-checker.js';
+export { checkManifests } from './manifest-checker.js';

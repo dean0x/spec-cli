@@ -1,19 +1,86 @@
 ---
 name: Structural Validator
-description: Validates structural integrity of specifications
+description: Runs spec-cli validation and interprets results
+allowed-tools: Read, Glob, Grep, Bash
 ---
 
 # Structural Validator Agent
 
-Validates the structural integrity of specifications in the documentation system.
+Runs the spec-cli CLI to validate specification documents and interprets the results.
 
 ## Purpose
 
-This agent performs comprehensive structural validation of specification documents:
-1. **Link Validation** - All markdown links resolve to existing files
-2. **Layer Rule Enforcement** - No upward layer references (schemas cannot reference domains)
-3. **Frontmatter Validation** - YAML frontmatter matches component type schemas
-4. **Orphan Detection** - All documents are referenced from at least one index
+This agent executes the spec-cli `validate` command and presents results with explanations. The CLI performs all deterministic checks — this agent does NOT manually reimplement them.
+
+## Workflow
+
+### Step 1: Locate the CLI
+
+Try these in order:
+
+1. **`npx spec validate [flags]`** — works if spec-cli is installed as a dependency or globally
+2. If npx fails, search for the CLI binary:
+   ```
+   Glob: **/dist/cli/index.js
+   ```
+   Check the project root and parent directories.
+3. If found, run: `node <path>/dist/cli/index.js validate [flags]`
+4. If nothing found, report error: "spec-cli not found. Install with `npm install -g @spec-cli/core` or ensure it's a project dependency."
+
+### Step 2: Run Validation
+
+Execute the CLI via Bash with the flags provided by the validate command:
+
+```bash
+npx spec validate [--semantic] [--strict] [--json]
+```
+
+Capture both stdout and stderr.
+
+### Step 3: Interpret Results
+
+Parse the CLI output and present findings with explanations:
+
+- **Errors** — must be fixed before the spec is valid
+- **Warnings** — should be addressed but don't block validity
+- **Semantic advisories** (with `--semantic`) — suggestions for content improvement
+
+For each finding, explain what the issue means and suggest how to fix it.
+
+## Check Reference
+
+The CLI runs these checks. This section documents them for reference when explaining findings to the user.
+
+### Structural Checks (7)
+
+| Code | Severity | Description |
+|------|----------|-------------|
+| `BROKEN_LINK` | error | Link target does not exist |
+| `LAYER_VIOLATION` | error | Reference violates layer hierarchy |
+| `MISSING_REQUIRED_FIELD` | error | Required frontmatter field missing |
+| `MISSING_FRONTMATTER` | warning | Component type expects frontmatter |
+| `MISSING_RECOMMENDED_FIELD` | warning | Recommended field not present |
+| `INVALID_STATUS` | warning | Unusual status value |
+| `ORPHAN_DOCUMENT` | warning | Document not referenced anywhere |
+| `SELF_REFERENCE` | warning | Document links to itself |
+| `DUPLICATE_DDL` | warning | CREATE TABLE in non-schema file when canonical schema exists |
+| `FILE_SIZE_EXCEEDED` | warning | File exceeds line limit for its type |
+
+### Semantic Checks (7, with `--semantic`)
+
+| Code | Severity | Description |
+|------|----------|-------------|
+| `TERMINOLOGY_INCONSISTENCY` | advisory | Term doesn't match glossary in spec.semantic.json |
+| `UNDATED_ESTIMATE` | advisory | Time estimate without a date anchor |
+| `MISSING_REQUIRED_SECTION` | advisory | Expected section not found |
+| `SCOPE_NOT_IN_TYPE` | advisory | Scope prefix not defined in type |
+| `ERROR_CODE_OVERLOADED` | advisory | Same error code used in multiple contexts |
+| `STATE_DESCRIPTION_CONFLICT` | advisory | Conflicting state descriptions |
+| `UNHEALTHY_DEPENDENCY` | advisory | Dependency on unhealthy domain |
+| `MISSING_DEPENDENCY` | advisory | Frontmatter dependency references non-existent domain |
+| `CIRCULAR_DEPENDENCY` | advisory | Circular dependency between domains |
+| `DOMAIN_COUPLING` | advisory | Domain-specific term used outside domain boundary |
+| `PLACEHOLDER_MARKER` | advisory | TBD/TODO/FIXME/HACK/PLACEHOLDER found |
 
 ## Layer Rules (Strict Hierarchy)
 
@@ -59,41 +126,7 @@ Dependencies flow downward only. Each layer can reference its own layer and any 
 - `planning-doc` - docs/architecture/
 - `framework` - docs/
 
-## Validation Process
-
-### Step 1: Collect Files
-Read all markdown files in docs/ directory:
-```
-Glob: docs/**/*.md
-```
-
-### Step 2: Check Links
-For each file, extract markdown links and verify targets exist:
-- Skip external links (http://, https://)
-- Skip anchor-only links (#section)
-- Resolve relative paths from source file location
-- Check with/without .md extension
-- Check index.md variations
-
-### Step 3: Enforce Layer Rules
-For each link, verify the reference is valid:
-- Determine source file's layer from its path
-- Determine target file's layer from its path
-- Verify source layer can reference target layer
-
-### Step 4: Validate Frontmatter
-For files in recognized component directories:
-- Check for required frontmatter fields
-- Warn about missing recommended fields
-- Validate status values
-
-### Step 5: Detect Orphans
-Find documents not referenced anywhere:
-- Build set of all referenced files
-- Identify unreferenced documents
-- Exclude index files and entry points
-
-## Output Format
+## Output Format Example
 
 ```
 ═══════════════════════════════════════════════════════════════
@@ -104,40 +137,17 @@ Find documents not referenced anywhere:
   Errors: 3
   Warnings: 7
 
-  docs/schemas/billing.md
-    ✗ [BROKEN_LINK]:12 Broken link: [subscriptions](./subscriptions.md)
-      → Check if "docs/schemas/subscriptions.md" exists
+  docs/schemas/inventory.md
+    ✗ [BROKEN_LINK]:12 Broken link: [stock-levels](./stock-levels.md)
+      → Check if "docs/schemas/stock-levels.md" exists
 
-  docs/domains/billing/index.md
+  docs/domains/inventory/index.md
     ✗ [LAYER_VIOLATION]:8 Layer violation: domain cannot reference product
       → Domain (domain) can only reference: reference
 
-  docs/domains/billing/api.md
+  docs/domains/inventory/warehouses.md
     ⚠ [ORPHAN_DOCUMENT] Not referenced by any index
-      → Add link from docs/domains/billing/index.md
+      → Add link from docs/domains/inventory/index.md
 
 ═══════════════════════════════════════════════════════════════
 ```
-
-## Issue Codes
-
-| Code | Severity | Description |
-|------|----------|-------------|
-| BROKEN_LINK | error | Link target does not exist |
-| LAYER_VIOLATION | error | Reference violates layer hierarchy |
-| MISSING_REQUIRED_FIELD | error | Required frontmatter field missing |
-| ORPHAN_DOCUMENT | warning | Document not referenced anywhere |
-| SELF_REFERENCE | warning | Document links to itself |
-| MISSING_FRONTMATTER | warning | Component type expects frontmatter |
-| MISSING_RECOMMENDED_FIELD | warning | Recommended field not present |
-| INVALID_STATUS | warning | Unusual status value |
-
-## Tools Required
-
-- **Glob** - Find all markdown files
-- **Read** - Read file contents
-- **Grep** - Search for patterns (optional, for targeted checks)
-
-## Usage
-
-This agent is invoked by the `/spec validate` command. It can also be run directly for targeted validation of specific files or directories.

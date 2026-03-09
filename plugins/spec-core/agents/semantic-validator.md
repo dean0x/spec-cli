@@ -8,6 +8,10 @@ allowed-tools: Read, Glob, Grep
 
 Analyzes specification content for issues that deterministic checks cannot catch: prose contradictions, coherence gaps, implicit dependencies, and missing information.
 
+## Scope
+
+This agent performs **LLM comprehension checks only**. Deterministic semantic checks (terminology, staleness, completeness, cross-references, dependency health, domain coupling, placeholders) are handled by the CLI via `spec validate --semantic`.
+
 ## Advisory Only
 
 All findings are **advisory, not blocking**:
@@ -34,8 +38,8 @@ Group files by their top-level directory under `docs/`:
 
 | Group | Files |
 |-------|-------|
-| billing | `docs/domains/billing/*`, `docs/schemas/billing.md`, `docs/products/*/features/*billing*` |
-| auth | `docs/domains/auth/*`, `docs/schemas/auth.md`, `docs/security/*` |
+| inventory | `docs/domains/inventory/*`, `docs/schemas/inventory.md`, `docs/products/*/features/*inventory*` |
+| users | `docs/domains/users/*`, `docs/schemas/users.md`, `docs/security/*` |
 | (cross-cutting) | `docs/architecture/*`, `docs/overview/*`, `docs/infrastructure/*` |
 
 For each domain group, also include:
@@ -61,7 +65,7 @@ Conflicting claims about the same concept across files in the group.
 **What does NOT count:**
 - Different levels of detail (summary vs. full description)
 - Intentional overrides documented with context
-- Different contexts making different claims (e.g., different subscription tiers)
+- Different contexts making different claims (e.g., different user roles)
 
 #### b. Coherence Gaps
 
@@ -114,8 +118,8 @@ Check that content stays within structural scope.
 Report format:
 ```
 SCHEMA_PURITY
-  File: docs/schemas/events.md
-  Finding: Contains "Alert Status Flow" section describing state transitions
+  File: docs/schemas/orders.md
+  Finding: Contains "Order Fulfillment Flow" section describing state transitions
   Suggestion: Move to appropriate domain file.
 ```
 
@@ -123,7 +127,7 @@ SCHEMA_PURITY
 
 After all groups are analyzed individually, check across domain boundaries:
 
-- **Entity consistency** — Same entity described differently in different domains (e.g., "subscription" has conflicting field lists in billing vs. product docs)
+- **Entity consistency** — Same entity described differently in different domains (e.g., "order" has conflicting field lists in inventory vs. product docs)
 - **Integration mismatches** — API endpoint docs that don't match domain business rules
 - **Assumption drift** — Feature specs that assume domain behavior not documented in the domain
 
@@ -139,41 +143,32 @@ Files analyzed: <count>
 Domains: <list>
 
 CONTRADICTION
-  Files: docs/domains/billing/model.md:194, docs/domains/billing/edge-cases.md:15
-  Finding: Conflicting claims about credit consumption during past_due state.
-    model.md says credits can be purchased and consumed during past_due.
-    edge-cases.md says read-only access during grace period.
-  Suggestion: Clarify whether past_due allows write operations or is read-only.
+  Files: docs/domains/inventory/model.md:42, docs/domains/inventory/warehouses.md:15
+  Finding: Conflicting claims about restock frequency.
+    model.md says inventory is restocked daily.
+    warehouses.md says weekly batch processing.
+  Suggestion: Clarify whether restocking is daily or weekly.
 
 COHERENCE
-  File: docs/domains/billing/model.md
-  Finding: Defines 4 subscription states but doesn't document transition
-    conditions from suspended to canceled, or whether canceled is terminal.
+  File: docs/domains/orders/model.md
+  Finding: Defines 4 order states but doesn't document transition
+    conditions from held to canceled, or whether canceled is terminal.
   Suggestion: Add state transition table or document each transition explicitly.
 
 IMPLICIT_DEPENDENCY
-  Files: docs/domains/events/notifications.md, docs/infrastructure/gcp.md
-  Finding: notifications.md references Resend email service which is
-    documented in infrastructure/gcp.md, but no explicit link exists.
-  Suggestion: Add cross-reference link from notifications.md to gcp.md.
+  Files: docs/domains/orders/notifications.md, docs/infrastructure/email.md
+  Finding: notifications.md references email service which is
+    documented in infrastructure/email.md, but no explicit link exists.
+  Suggestion: Add cross-reference link from notifications.md to email.md.
 
 MISSING_INFO
-  File: docs/domains/billing/model.md
-  Finding: Timeout for auto-cancellation after suspension is not specified.
+  File: docs/domains/orders/model.md
+  Finding: Timeout for auto-cancellation after hold is not specified.
   Suggestion: Document the timeout duration or link to where it's configured.
 
 Summary: <N> findings (<contradictions> contradictions, <coherence> coherence,
   <deps> implicit dependencies, <missing> missing info)
 ```
-
-## What This Agent Does NOT Do
-
-- **No terminology enforcement** — That's a deterministic check in the CLI (`spec validate --semantic`)
-- **No staleness detection** — That's a deterministic check in the CLI
-- **No required section checking** — That's structural validation
-- **No link checking** — That's the structural-validator agent's job
-
-This agent focuses exclusively on what requires LLM comprehension: understanding prose meaning, detecting logical contradictions, and identifying implicit relationships.
 
 ## Limitations
 
