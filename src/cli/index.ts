@@ -8,6 +8,7 @@
 import { initProject } from './init.js';
 import { runValidation } from './validate.js';
 import { runAddFrontmatter } from './add-frontmatter.js';
+import { runIssues } from './issues.js';
 
 const HELP_TEXT = `
 spec - Composable Specification Framework
@@ -19,6 +20,7 @@ Commands:
   init              Initialize spec in current project
   validate          Run structural validation on docs
   add-frontmatter   Add missing YAML frontmatter to docs
+  issues            Sync feature manifests to GitHub issues
   help              Show this help message
 
 Options:
@@ -58,6 +60,10 @@ async function main(): Promise<void> {
 
     case 'add-frontmatter':
       await runAddFrontmatter(args.slice(1));
+      break;
+
+    case 'issues':
+      await runIssues(args.slice(1));
       break;
 
     default:

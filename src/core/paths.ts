@@ -24,6 +24,11 @@ export interface SpecCliPaths {
   manifestDir: string;
   /** Consumer project root (where spec.config.yaml lives) */
   projectRoot: string;
+  /** GitHub configuration from spec.config.yaml */
+  github?: {
+    repo?: string;
+    labelPrefix?: string;
+  };
 }
 
 /**
@@ -38,6 +43,10 @@ export interface SpecConfig {
   docsDir?: string;
   manifestDir?: string;
   extends?: string;
+  github?: {
+    repo?: string;
+    labelPrefix?: string;
+  };
 }
 
 /**
@@ -120,6 +129,7 @@ export function loadConfig(projectRoot: string): PathResult<SpecConfig> {
 function parseYamlConfig(content: string): SpecConfig {
   const config: SpecConfig = {};
   const lines = content.split('\n');
+  let inGithubSection = false;
 
   for (const line of lines) {
     const trimmed = line.trim();
@@ -127,6 +137,20 @@ function parseYamlConfig(content: string): SpecConfig {
     // Skip empty lines and comments
     if (!trimmed || trimmed.startsWith('#')) {
       continue;
+    }
+
+    // Detect indentation to know if we're in a nested section
+    const indent = line.length - line.trimStart().length;
+
+    if (indent === 0 && trimmed === 'github:') {
+      inGithubSection = true;
+      config.github = {};
+      continue;
+    }
+
+    // If we hit a non-indented key, we're out of the github section
+    if (indent === 0 && trimmed.includes(':')) {
+      inGithubSection = false;
     }
 
     // Parse key: value
@@ -144,16 +168,21 @@ function parseYamlConfig(content: string): SpecConfig {
       value = value.slice(1, -1);
     }
 
-    switch (key) {
-      case 'docsDir':
-        config.docsDir = value;
-        break;
-      case 'manifestDir':
-        config.manifestDir = value;
-        break;
-      case 'extends':
-        config.extends = value;
-        break;
+    if (inGithubSection && indent > 0) {
+      if (key === 'repo') config.github!.repo = value;
+      if (key === 'labelPrefix') config.github!.labelPrefix = value;
+    } else {
+      switch (key) {
+        case 'docsDir':
+          config.docsDir = value;
+          break;
+        case 'manifestDir':
+          config.manifestDir = value;
+          break;
+        case 'extends':
+          config.extends = value;
+          break;
+      }
     }
   }
 
@@ -181,15 +210,18 @@ export function resolveSpecCliPaths(projectRoot?: string): PathResult<SpecCliPat
   const docsRoot = join(resolvedProjectRoot, docsDir);
   const manifestPath = join(resolvedProjectRoot, manifestDir);
 
-  return {
-    ok: true,
-    value: {
-      packageRoot,
-      docsRoot,
-      manifestDir: manifestPath,
-      projectRoot: resolvedProjectRoot,
-    },
+  const value: SpecCliPaths = {
+    packageRoot,
+    docsRoot,
+    manifestDir: manifestPath,
+    projectRoot: resolvedProjectRoot,
   };
+
+  if (config.github) {
+    value.github = config.github;
+  }
+
+  return { ok: true, value };
 }
 
 /**

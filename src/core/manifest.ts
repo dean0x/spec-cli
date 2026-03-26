@@ -31,7 +31,7 @@ export function parseManifest(content: string): FeatureManifest | null {
     uses: {},
   };
 
-  let currentSection: 'root' | 'owns' | 'uses' | 'referencedBy' = 'root';
+  let currentSection: 'root' | 'owns' | 'uses' | 'referencedBy' | 'github' = 'root';
   let currentKey: string | null = null;
 
   for (const line of lines) {
@@ -59,6 +59,14 @@ export function parseManifest(content: string): FeatureManifest | null {
       }
       continue;
     }
+    if (trimmed === 'github:') {
+      currentSection = 'github';
+      currentKey = null;
+      if (!manifest.github) {
+        manifest.github = {};
+      }
+      continue;
+    }
 
     // Parse key-value pairs
     const colonIndex = trimmed.indexOf(':');
@@ -70,6 +78,13 @@ export function parseManifest(content: string): FeatureManifest | null {
         if (key === 'feature') manifest.feature = value;
         if (key === 'status') manifest.status = value as FeatureManifest['status'];
         if (key === 'description') manifest.description = value;
+      } else if (currentSection === 'github') {
+        if (key === 'issue') manifest.github!.issue = parseInt(value, 10);
+        if (key === 'labels') {
+          if (value.startsWith('[') && value.endsWith(']')) {
+            manifest.github!.labels = value.slice(1, -1).split(',').map(s => s.trim()).filter(Boolean);
+          }
+        }
       } else {
         currentKey = key;
         // Handle inline array like: schemas: [billing, users]
@@ -136,6 +151,16 @@ export function serializeManifest(manifest: FeatureManifest): string {
     lines.push('referencedBy:');
     for (const ref of manifest.referencedBy) {
       lines.push(`  - ${ref}`);
+    }
+  }
+
+  if (manifest.github) {
+    lines.push('github:');
+    if (manifest.github.issue !== undefined) {
+      lines.push(`  issue: ${manifest.github.issue}`);
+    }
+    if (manifest.github.labels && manifest.github.labels.length > 0) {
+      lines.push(`  labels: [${manifest.github.labels.join(', ')}]`);
     }
   }
 

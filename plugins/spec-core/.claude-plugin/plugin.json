@@ -13,7 +13,8 @@
         { "name": "validate", "handler": "./commands/validate.md" },
         { "name": "add", "handler": "./commands/add.md" },
         { "name": "graph", "handler": "./commands/graph.md" },
-        { "name": "remove", "handler": "./commands/remove.md" }
+        { "name": "remove", "handler": "./commands/remove.md" },
+        { "name": "issues", "handler": "./commands/issues.md" }
       ]
     }
   ],
@@ -22,7 +23,8 @@
     "semantic-validator",
     "feature-composer",
     "dependency-analyzer",
-    "feature-remover"
+    "feature-remover",
+    "issue-syncer"
   ],
   "skills": ["spec-authoring"]
 }

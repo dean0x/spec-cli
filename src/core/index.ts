@@ -8,3 +8,4 @@ export * from './templates.js';
 export * from './graph.js';
 export * from './removal.js';
 export * from './paths.js';
+export * from './github.js';

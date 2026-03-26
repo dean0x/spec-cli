@@ -179,6 +179,10 @@ export interface FeatureManifest {
     domains?: string[];
   };
   referencedBy?: string[];
+  github?: {
+    issue?: number;
+    labels?: string[];
+  };
 }
 
 /**
