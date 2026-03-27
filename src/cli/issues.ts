@@ -51,11 +51,9 @@ export async function runIssues(args: string[]): Promise<void> {
     process.exit(1);
   }
 
-  if (!jsonOutput && !dryRun) {
-    console.log(`Syncing ${manifests.length} manifest(s) to ${repo}...`);
-  }
-  if (!jsonOutput && dryRun) {
-    console.log(`Dry run: previewing sync for ${manifests.length} manifest(s) to ${repo}...`);
+  if (!jsonOutput) {
+    const prefix = dryRun ? 'Dry run: previewing sync for' : 'Syncing';
+    console.log(`${prefix} ${manifests.length} manifest(s) to ${repo}...`);
   }
 
   const results: SyncResult[] = [];
@@ -89,12 +87,10 @@ export async function runIssues(args: string[]): Promise<void> {
       console.log(`  ${icon} ${r.feature}${issue}${err}`);
     }
 
-    const created = results.filter(r => r.action === 'created').length;
-    const updated = results.filter(r => r.action === 'updated').length;
-    const unchanged = results.filter(r => r.action === 'unchanged').length;
-    const errors = results.filter(r => r.action === 'error').length;
+    const counts = { created: 0, updated: 0, unchanged: 0, error: 0 };
+    for (const r of results) counts[r.action]++;
 
-    console.log(`\nDone: ${created} created, ${updated} updated, ${unchanged} unchanged, ${errors} errors`);
+    console.log(`\nDone: ${counts.created} created, ${counts.updated} updated, ${counts.unchanged} unchanged, ${counts.error} errors`);
   }
 }
 

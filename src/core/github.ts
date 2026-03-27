@@ -2,7 +2,7 @@
  * GitHub Issues integration via gh CLI
  */
 
-import { execSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 import type { FeatureManifest } from './types.js';
 
 export interface GitHubIssue {
@@ -30,10 +30,11 @@ export interface SyncOptions {
  */
 export function detectRepo(): string | null {
   try {
-    const output = execSync('gh repo view --json nameWithOwner -q .nameWithOwner', {
-      encoding: 'utf-8',
-      stdio: ['pipe', 'pipe', 'pipe'],
-    }).trim();
+    const output = execFileSync(
+      'gh',
+      ['repo', 'view', '--json', 'nameWithOwner', '-q', '.nameWithOwner'],
+      { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] }
+    ).trim();
     return output || null;
   } catch {
     return null;
@@ -46,6 +47,30 @@ export function detectRepo(): string | null {
 export function buildIssueTitle(manifest: FeatureManifest): string {
   const desc = manifest.description || manifest.feature;
   return `[spec] ${manifest.feature}: ${desc}`;
+}
+
+/** Append a markdown table of type/component rows if the section is non-empty */
+function appendComponentTable(
+  lines: string[],
+  heading: string,
+  section: Record<string, string[] | undefined>
+): void {
+  const entries = Object.entries(section).filter(
+    ([, v]) => Array.isArray(v) && v.length > 0
+  );
+  if (entries.length === 0) return;
+
+  lines.push(heading);
+  lines.push('| Type | Component |');
+  lines.push('|------|-----------|');
+  for (const [type, components] of entries) {
+    if (components) {
+      for (const comp of components) {
+        lines.push(`| ${type} | ${comp} |`);
+      }
+    }
+  }
+  lines.push('');
 }
 
 /**
@@ -66,41 +91,8 @@ export function buildIssueBody(manifest: FeatureManifest, manifestPath: string):
     lines.push('');
   }
 
-  // Owned components
-  const ownedEntries = Object.entries(manifest.owns).filter(
-    ([, v]) => Array.isArray(v) && v.length > 0
-  );
-  if (ownedEntries.length > 0) {
-    lines.push('### Owned Components');
-    lines.push('| Type | Component |');
-    lines.push('|------|-----------|');
-    for (const [type, components] of ownedEntries) {
-      if (components) {
-        for (const comp of components) {
-          lines.push(`| ${type} | ${comp} |`);
-        }
-      }
-    }
-    lines.push('');
-  }
-
-  // Dependencies (uses)
-  const usesEntries = Object.entries(manifest.uses).filter(
-    ([, v]) => Array.isArray(v) && v.length > 0
-  );
-  if (usesEntries.length > 0) {
-    lines.push('### Dependencies');
-    lines.push('| Type | Component |');
-    lines.push('|------|-----------|');
-    for (const [type, components] of usesEntries) {
-      if (components) {
-        for (const comp of components) {
-          lines.push(`| ${type} | ${comp} |`);
-        }
-      }
-    }
-    lines.push('');
-  }
+  appendComponentTable(lines, '### Owned Components', manifest.owns);
+  appendComponentTable(lines, '### Dependencies', manifest.uses);
 
   // Referenced by
   if (manifest.referencedBy && manifest.referencedBy.length > 0) {
@@ -132,7 +124,7 @@ export function getLabelsForManifest(manifest: FeatureManifest, labelPrefix?: st
 export function ensureLabels(repo: string, labels: string[]): void {
   for (const label of labels) {
     try {
-      execSync(`gh label create "${label}" --repo "${repo}" --force`, {
+      execFileSync('gh', ['label', 'create', label, '--repo', repo, '--force'], {
         encoding: 'utf-8',
         stdio: ['pipe', 'pipe', 'pipe'],
       });
@@ -147,8 +139,9 @@ export function ensureLabels(repo: string, labels: string[]): void {
  */
 export function getIssue(repo: string, issueNumber: number): GitHubIssue | null {
   try {
-    const output = execSync(
-      `gh issue view ${issueNumber} --repo "${repo}" --json number,title,body,state,labels`,
+    const output = execFileSync(
+      'gh',
+      ['issue', 'view', String(issueNumber), '--repo', repo, '--json', 'number,title,body,state,labels'],
       { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] }
     ).trim();
     const data = JSON.parse(output);
@@ -173,11 +166,14 @@ export function createIssue(
   body: string,
   labels: string[]
 ): number {
-  const labelArgs = labels.map(l => `--label "${l}"`).join(' ');
-  const output = execSync(
-    `gh issue create --repo "${repo}" --title "${title}" --body "$(cat <<'SPEC_EOF'\n${body}\nSPEC_EOF\n)" ${labelArgs}`,
-    { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] }
-  ).trim();
+  const args = ['issue', 'create', '--repo', repo, '--title', title, '--body', body];
+  for (const label of labels) {
+    args.push('--label', label);
+  }
+  const output = execFileSync('gh', args, {
+    encoding: 'utf-8',
+    stdio: ['pipe', 'pipe', 'pipe'],
+  }).trim();
 
   // gh issue create returns the issue URL, extract number
   const match = output.match(/\/issues\/(\d+)/);
@@ -196,8 +192,9 @@ export function updateIssue(
   title: string,
   body: string
 ): void {
-  execSync(
-    `gh issue edit ${issueNumber} --repo "${repo}" --title "${title}" --body "$(cat <<'SPEC_EOF'\n${body}\nSPEC_EOF\n)"`,
+  execFileSync(
+    'gh',
+    ['issue', 'edit', String(issueNumber), '--repo', repo, '--title', title, '--body', body],
     { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] }
   );
 }
