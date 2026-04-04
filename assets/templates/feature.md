@@ -32,6 +32,9 @@ Description or links to wireframes.
 2. User clicks...
 3. System responds with...
 
+<!-- Do not duplicate domain or schema content inline. Use a one-sentence summary
+     with a link to the canonical source. See FRAMEWORK.md Rule 1 (SSOT). -->
+
 ## Technical Design
 
 ### Components Affected

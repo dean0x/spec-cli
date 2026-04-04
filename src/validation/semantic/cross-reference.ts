@@ -138,22 +138,56 @@ interface ErrorCodeEntry {
 /**
  * Extract error codes from markdown tables.
  * Looks for uppercase-with-underscores codes in table cells.
+ * Uses the header row to identify which column contains descriptions;
+ * tables without a Description column contribute codes but no descriptions.
  */
 function extractErrorCodes(content: string, filePath: string): ErrorCodeEntry[] {
   const entries: ErrorCodeEntry[] = [];
   const lines = content.split('\n');
 
+  let inTable = false;
+  let pastSeparator = false;
+  let descColIndex = -1;
+
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
     if (line === undefined) continue;
 
-    // Only look in table rows (must have |)
-    if (!line.includes('|')) continue;
-    // Skip separator rows
-    if (/^\s*\|[\s-:|]+\|\s*$/.test(line)) continue;
+    // Not a table row — reset table state
+    if (!line.includes('|')) {
+      inTable = false;
+      pastSeparator = false;
+      descColIndex = -1;
+      continue;
+    }
+
+    // Check for separator row (|---|---|)
+    if (/^\s*\|[\s-:|]+\|\s*$/.test(line)) {
+      if (inTable) pastSeparator = true;
+      continue;
+    }
 
     const cells = line.split('|').map((c) => c.trim()).filter((c) => c.length > 0);
     if (cells.length < 2) continue;
+
+    if (!inTable) {
+      // Header row — find Description column index
+      inTable = true;
+      pastSeparator = false;
+      descColIndex = -1;
+
+      for (let j = 0; j < cells.length; j++) {
+        const header = cells[j]?.toLowerCase() ?? '';
+        if (header === 'description' || header === 'meaning' || header === 'purpose') {
+          descColIndex = j;
+          break;
+        }
+      }
+      continue;
+    }
+
+    // Data row — only process after separator
+    if (!pastSeparator) continue;
 
     // Look for error code pattern in cells: UPPER_CASE_CODE
     for (let j = 0; j < cells.length; j++) {
@@ -163,8 +197,8 @@ function extractErrorCodes(content: string, filePath: string): ErrorCodeEntry[] 
       // Require at least one underscore to distinguish error codes from acronyms (HTTP, GKE, etc.)
       const codeMatch = /^([A-Z][A-Z0-9]*_[A-Z0-9_]+)$/.exec(cell);
       if (codeMatch?.[1]) {
-        // The description is typically the next cell
-        const description = cells[j + 1] ?? '';
+        // Use description from the identified Description column, or empty if no such column
+        const description = descColIndex >= 0 ? (cells[descColIndex] ?? '') : '';
         entries.push({
           code: codeMatch[1],
           description: description.trim(),
@@ -223,6 +257,48 @@ export function checkErrorCodeUniqueness(files: Map<string, string>): Validation
   }
 
   return issues;
+}
+
+// ---------- Domain Context ----------
+
+/**
+ * Derive a domain context from a file path for scoping cross-reference checks.
+ * Files in different domains may reuse state names (e.g., "failed") independently.
+ */
+function getDomainContext(filePath: string): string {
+  // docs/domains/events/* → "events"
+  const domainMatch = /docs\/domains\/([^/]+)/.exec(filePath);
+  if (domainMatch?.[1]) return domainMatch[1];
+
+  // docs/products/*/features/entity-* → "entities", alert-* → "events"
+  const featureMatch = /docs\/products\/[^/]+\/features\/([^/.]+)/.exec(filePath);
+  if (featureMatch?.[1]) {
+    if (featureMatch[1].startsWith('entity-')) return 'entities';
+    if (featureMatch[1].startsWith('alert-')) return 'events';
+  }
+
+  // docs/schemas/ → map to owning domain
+  const schemaMatch = /docs\/schemas\/([^/.]+)/.exec(filePath);
+  if (schemaMatch?.[1]) {
+    const schemaMap: Record<string, string> = {
+      notifications: 'events',
+      events: 'events',
+      entities: 'entities',
+      organizations: 'organizations',
+      users: 'auth',
+      properties: 'properties',
+      rules: 'rules',
+      portfolios: 'organizations',
+    };
+    const mapped = schemaMap[schemaMatch[1]];
+    if (mapped) return mapped;
+  }
+
+  // Fallback: second path segment after docs/
+  const fallback = /docs\/([^/]+)/.exec(filePath);
+  if (fallback?.[1]) return fallback[1];
+
+  return 'unknown';
 }
 
 // ---------- State Description Consistency ----------
@@ -316,19 +392,22 @@ function extractStateEntries(content: string, filePath: string): StateEntry[] {
 export function checkStateConsistency(files: Map<string, string>): ValidationIssue[] {
   const issues: ValidationIssue[] = [];
 
-  // Collect all state entries across all files
+  // Collect all state entries, scoped by domain context
   const stateMap = new Map<string, StateEntry[]>();
   for (const [filePath, content] of files) {
     const entries = extractStateEntries(content, filePath);
+    const domain = getDomainContext(filePath);
     for (const entry of entries) {
-      const existing = stateMap.get(entry.state) ?? [];
+      const key = `${domain}:${entry.state}`;
+      const existing = stateMap.get(key) ?? [];
       existing.push(entry);
-      stateMap.set(entry.state, existing);
+      stateMap.set(key, existing);
     }
   }
 
-  // Check for same state with different descriptions (across different files)
-  for (const [state, entries] of stateMap) {
+  // Check for same state with different descriptions (within same domain)
+  for (const [key, entries] of stateMap) {
+    const state = key.substring(key.indexOf(':') + 1);
     // Only compare across different files
     const byFile = new Map<string, StateEntry>();
     for (const entry of entries) {
