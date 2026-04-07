@@ -131,7 +131,23 @@ After all groups are analyzed individually, check across domain boundaries:
 - **Integration mismatches** — API endpoint docs that don't match domain business rules
 - **Assumption drift** — Feature specs that assume domain behavior not documented in the domain
 
-### Step 5: Report
+### Step 5: Layer-Safe Cross-References
+
+When suggesting cross-reference links, check whether the link would violate layer boundaries. The layer hierarchy enforces strict downward-only dependencies:
+
+| Layer | Can Reference |
+|-------|---------------|
+| planning | reference, domain, supporting, product |
+| product | reference, domain, supporting |
+| supporting | reference, domain |
+| domain | reference |
+| reference | nothing (foundation) |
+
+**Exception:** `decision` type (ADRs) can reference all layers.
+
+If a suggested cross-reference would create a layer violation (e.g., a domain file linking to a product file), suggest a prose reference instead (e.g., "See the X doc") rather than a markdown link. A suggestion to add a link that would create a layer violation is itself an invalid suggestion.
+
+### Step 6: Report
 
 Output findings in this format:
 

@@ -66,7 +66,32 @@ Edge metadata:
 - Link text
 - Layer violation flag
 
-### Step 4: Analysis
+### Step 4: Component Type Classification
+
+Each file maps to one of 16 component types based on its path. Use this table to determine the correct layer:
+
+| Path Prefix | Type Key | Layer |
+|---|---|---|
+| `docs/schemas` | schema | reference |
+| `docs/architecture/patterns` | pattern | reference |
+| `docs/architecture/decisions` | decision | reference (can ref all layers) |
+| `docs/domains` | domain | domain |
+| `docs/domains/*` (topic files) | domain-topic | domain |
+| `docs/infrastructure` | infrastructure | supporting |
+| `docs/security` | security | supporting |
+| `docs/operations` | operations | supporting |
+| `docs/frontend` | frontend | supporting |
+| `docs/api` | api | supporting |
+| `docs/diagrams` | diagram | supporting |
+| `docs/products` | product | product |
+| `docs/products/*/features` | feature | product |
+| `docs/overview` | overview | planning |
+| `docs/architecture` (not patterns/decisions) | planning-doc | planning |
+| `docs` (root, e.g. FRAMEWORK.md) | framework | planning |
+
+**Key callout:** Files under `docs/architecture/` that are NOT in `patterns/` or `decisions/` subdirectories are `planning-doc` (planning layer, can reference all layers), NOT reference layer. The path match is longest-prefix, so `docs/architecture/patterns/rate-limiting.md` → `pattern` (reference), but `docs/architecture/scaling.md` → `planning-doc` (planning).
+
+### Step 5: Analysis
 
 Perform requested analysis:
 
