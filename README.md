@@ -1,4 +1,4 @@
-# spec-cli
+# specflow
 
 Composable specification framework for managing layered technical documentation as code.
 
